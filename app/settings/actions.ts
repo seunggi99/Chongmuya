@@ -11,17 +11,7 @@ import {
   updateClubSettings,
 } from "@/lib/categories";
 import type { Category, CategoryKind, ClubSettings } from "@/types";
-
-export type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: string };
-
-function fail(e: unknown): { ok: false; error: string } {
-  return {
-    ok: false,
-    error: e instanceof Error ? e.message : "처리 중 오류가 발생했습니다.",
-  };
-}
+import { type ActionResult, fail } from "@/lib/action-result";
 
 /** 설정 편집 화면용 목록은 비활성 분류도 포함해서 반환 */
 function editorList(kind: CategoryKind) {

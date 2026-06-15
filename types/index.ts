@@ -161,6 +161,20 @@ export interface BalanceSummary {
   total: number;
 }
 
+// ─── 연회비 현황 (계산 결과) ────────────────────────────────
+export interface DuesStatusRow {
+  member: Member;
+  paid: boolean;
+  paidAt: string | null; // date
+  amount: number | null;
+  dueId: string | null; // 납부 취소(삭제)용
+}
+
+export interface DuesRate {
+  paidCount: number;
+  totalCount: number;
+}
+
 // ─── 조인 확장 타입 (필요 시 사용) ──────────────────────────
 export interface EntryWithDetails extends Entry {
   details: EntryDetail[];

@@ -132,14 +132,19 @@ id          uuid pk default gen_random_uuid()
 name        text not null               -- '식비','버스/교통','당일회비'...
 kind        text not null check (kind in ('income','expense'))
 is_system   boolean default false       -- true면 삭제 불가(당일회비/찬조/연회비)
+is_active   boolean default true        -- 비활성 분류는 신규 입력 목록에서 숨김
 special     text                        -- 'daily_fee'|'donation'|'annual_dues'|null
                                          -- 회원 연동되는 특수 분류 표시
 sort_order  integer default 0
-is_active   boolean default true        -- false면 입력 목록에서 숨김(소프트 삭제)
 ```
 - 시드: 지출 = 버스/교통, 식비, 숙박, 입장료, 커피/간식, 선물, 경조사비, 2차모임, 기타
 - 시드: 수입 = 당일회비(special=daily_fee, system), 찬조(donation, system),
   연회비(annual_dues, system), 은행이자, 기타
+- **분류 삭제 규칙**: is_system=true는 삭제 불가. 그 외 분류도 이미 entries가
+  참조 중이면 하드 삭제 금지. 대신 is_active=false로 비활성 처리(소프트 삭제) —
+  과거 일지·결산의 분류 표시는 유지되고, 신규 입력 분류 목록에서만 숨긴다.
+  참조하는 entry가 0건일 때만 실제 삭제 허용.
+  (삭제 시도 시 사용 중이면 "이 분류를 쓰는 일지 N건이 있어 비활성 처리됩니다" 안내)
 
 ### sessions (회차)
 ```sql
@@ -229,6 +234,22 @@ is_used     boolean default false        -- 일지에 이미 반영됐는지(중
 raw         jsonb                        -- 원본 행 보관
 ```
 
+### club_settings (모임 설정 — 싱글톤, id=1 고정)
+```sql
+id          integer pk default 1 check (id = 1)
+club_name   text
+default_chairperson text             -- 회장 기본값
+default_treasurer   text             -- 총무 기본값
+dues_renewal_month  integer not null default 3 check (between 1 and 12)
+                                      -- 연회비 갱신 월 (모임마다 다름)
+default_due_amount  bigint not null default 100000  -- 연회비 기본 금액
+updated_at  timestamptz default now()
+```
+- **연회비 갱신월은 설정에서 커스텀.** year_label은 이 값 기준으로 계산:
+  현재 날짜의 월 >= dues_renewal_month이면 "YY~(YY+1)", 아니면 "(YY-1)~YY".
+  예) 갱신월=3, 현재 2026.6 → "26~27" / 현재 2026.2 → "25~26".
+  currentYearLabel()은 하드코딩하지 말고 club_settings.dues_renewal_month를 읽어 계산.
+
 ---
 
 ## 핵심 비즈니스 로직
@@ -291,21 +312,15 @@ raw         jsonb                        -- 원본 행 보관
 - entry = 분류 단위(식비, 교통...), entry_details = 그 안의 상세(식당1, 식당2...)
 - entry.amount = entry_details 합계 (자동 계산·검증)
 - 미리보기 표시: "식비 (황태덕장·대관령한우·휴게소) 2,150,000"
-- 분류는 설정 페이지에서 커스텀(추가/삭제/이름변경/정렬)
+- 분류는 설정 페이지에서 커스텀(추가/삭제/이름변경)
 - is_system=true(당일회비/찬조/연회비)는 삭제 불가
-- **분류 삭제 규칙(소프트 삭제):**
-  * is_system이면 삭제 불가(에러)
-  * 참조하는 entry가 0건이면 하드 삭제
-  * entry가 1건 이상이면 is_active=false로 비활성 처리(소프트 삭제) →
-    "이 분류를 쓰는 일지 N건이 있어 비활성 처리됨" 안내
-  * 입력용 분류 목록은 is_active=true만 노출. 비활성 분류는 설정에서 복구 가능
 
 ### 연회비 연동
 - 분할/입력에서 연회비 분류 선택 + 회원 지정 → annual_dues 기록
 - /dues에서 year_label별 납부 현황, 회원 목록에 납부 뱃지
 
 ### 연간 결산 구성 (`/settlement`)
-결산 페이지는 다음 4가지로 구성:
+결산 페이지는 다음 5가지로 구성:
 1. 요약 카드: 총수입 / 총지출 / 총잔액 / 회차수 (선택 연도 기준)
 2. 회차별 결산 테이블: 결산 뷰 기준(귀속 항목만), 회차/장소/일자/수입/지출/잔액
 3. 분류별 지출 차트: recharts BarChart
@@ -368,3 +383,10 @@ SUPABASE_SERVICE_ROLE_KEY=
 - 도메인 chongmuya.vercel.app
 - PDF는 puppeteer-core + @sparticuz/chromium (일반 puppeteer 용량초과)
 - vercel.json에서 PDF 라우트 maxDuration 상향
+
+## 커밋 규칙
+- 작업을 검증 가능한 작은 단위로 끝낼 때마다 **묻지 말고 알아서 커밋**한다.
+- 형식: Conventional Commits `type(scope): subject` (한글 본문 가능).
+- 한 커밋 = 한 논리 변경. 커밋 전 `git status`로 `.env`·시크릿·빌드 산출물 제외 확인.
+- 빌드/타입체크가 통과한 working state에서만 커밋한다.
+- 커밋 후 멈추고 사용자 리뷰를 기다린다. (push는 명시적 요청 시에만)
