@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/*
+ * 총무야 디자인 토큰 (Tailwind v4 @theme)
+ * 커스텀 색상은 bg-primary, text-income, border-balance 등으로 사용 가능
+ */
+@theme {
+  --color-primary: #2563eb; /* 주요 액션·강조·링크 */
+  --color-dark: #1e3a6e; /* 사이드바 어두운 배경(선택) */
+  --color-light: #eff6ff; /* active 메뉴 배경 */
+
+  --color-income: #16a34a; /* 수입(초록) */
+  --color-expense: #dc2626; /* 지출(빨강) */
+  --color-cross: #d97706; /* 교차(주황) */
+  --color-balance: #2563eb; /* 잔액(파랑) */
+
+  --font-sans:
+    "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827; /* Text */
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 무인양품 톤: 숫자 가독성을 위한 tabular 정렬 */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

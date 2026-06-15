@@ -1,0 +1,9 @@
+<svg width="200" height="48" viewBox="0 0 200 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="8" width="32" height="32" rx="8" fill="#2563EB"/>
+  <circle cx="20" cy="22" r="7" stroke="white" stroke-width="1.5" fill="none"/>
+  <path d="M16.5 22.2L19 24.8L23.5 19" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="13" y="30" width="14" height="1.6" rx="0.8" fill="white" fill-opacity="0.4"/>
+  <text x="48" y="26" font-family="Pretendard, -apple-system, sans-serif" font-size="19" font-weight="700" letter-spacing="-0.5" fill="#111827">총무</text>
+  <text x="84" y="26" font-family="Pretendard, -apple-system, sans-serif" font-size="19" font-weight="700" letter-spacing="-0.5" fill="#2563EB">야</text>
+  <text x="48" y="39" font-family="Pretendard, -apple-system, sans-serif" font-size="9" font-weight="400" letter-spacing="0.5" fill="#9CA3AF">모임 경비 관리</text>
+</svg>
