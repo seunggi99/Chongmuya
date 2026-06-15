@@ -24,13 +24,14 @@ export default function Step2Attendees({ draft, dispatch, members }: StepProps) 
     [members, tab],
   );
 
-  // 선택 인원 집계
+  // 선택 인원 집계 — 당일회비는 전체 참석자(정회원+일반회원) 기준
   const selectedMembers = members.filter((m) => selected.has(m.id));
   const memberCount = selectedMembers.filter((m) => m.type === "member").length;
   const generalCount = selectedMembers.filter(
     (m) => m.type === "general",
   ).length;
-  const dailyFee = draft.fee_per_person * memberCount;
+  const totalCount = selectedMembers.length;
+  const dailyFee = draft.fee_per_person * totalCount;
 
   return (
     <div className="space-y-5">
@@ -112,13 +113,15 @@ export default function Step2Attendees({ draft, dispatch, members }: StepProps) 
       {/* 집계 + 당일회비 자동 */}
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3 text-sm">
         <span className="text-gray-600">
-          회원 <b className="text-gray-900">{memberCount}</b>명 · 일반회원{" "}
-          <b className="text-gray-900">{generalCount}</b>명
+          참석 <b className="text-gray-900">{totalCount}</b>명{" "}
+          <span className="text-xs text-gray-400">
+            (회원 {memberCount} · 일반회원 {generalCount})
+          </span>
         </span>
         <span className="text-gray-600">
           당일회비{" "}
           <span className="text-xs text-gray-400">
-            ({formatWon(draft.fee_per_person)} × 회원 {memberCount})
+            ({formatWon(draft.fee_per_person)} × {totalCount})
           </span>{" "}
           <b className="text-income">{formatWon(dailyFee)}</b>
         </span>

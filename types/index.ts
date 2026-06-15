@@ -196,6 +196,7 @@ export interface SessionWithRelations extends Session {
 
 /** 상세항목 입력값 (한 분류 안의 식당1·버스1 …) */
 export interface EntryDetailDraft {
+  uid: string; // 클라이언트 전용 식별자 (React key·업데이트용)
   label: string;
   amount: number; // 정수(원)
   receipt_url?: string | null;
@@ -203,6 +204,7 @@ export interface EntryDetailDraft {
 
 /** 분류 단위 입력값 (수입/지출 한 줄) */
 export interface EntryDraft {
+  uid: string; // 클라이언트 전용 식별자
   kind: EntryKind;
   category_id: string | null;
   /** 선입금/선지급 귀속회차 (당일이면 null) */
@@ -210,12 +212,16 @@ export interface EntryDraft {
   /** 은행 거래 매칭(있으면) */
   bank_tx_id: string | null;
   details: EntryDetailDraft[];
-  /** 당일회비/찬조/연회비 명단 (그 외 분류는 빈 배열) */
+  /**
+   * 당일회비/찬조/연회비 명단 (그 외 분류는 빈 배열).
+   * 회원연동 분류에서는 member_ids[i] 와 details[i] 가 같은 회원을 가리킨다.
+   */
   member_ids: string[];
 }
 
 /** 물품 찬조 입력값 (금액 없음) */
 export interface GoodsDonationDraft {
+  uid: string; // 클라이언트 전용 식별자
   item: string;
   donor: string | null;
 }

@@ -2,7 +2,14 @@
 
 import { useReducer, useState } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
-import type { Member, SessionDraft } from "@/types";
+import type {
+  BankTransaction,
+  Category,
+  EntryDraft,
+  GoodsDonationDraft,
+  Member,
+  SessionDraft,
+} from "@/types";
 import Step1BasicInfo from "@/components/session/Step1BasicInfo";
 import Step2Attendees from "@/components/session/Step2Attendees";
 import Step3Income from "@/components/session/Step3Income";
@@ -15,6 +22,10 @@ export type DraftAction =
   | { type: "patch"; patch: Partial<SessionDraft> }
   | { type: "toggleAttendee"; memberId: string }
   | { type: "setAttendees"; ids: string[] }
+  | { type: "addEntry"; entry: EntryDraft }
+  | { type: "updateEntry"; uid: string; entry: EntryDraft }
+  | { type: "removeEntry"; uid: string }
+  | { type: "setGoods"; goods: GoodsDonationDraft[] }
   | { type: "reset"; draft: SessionDraft };
 
 function draftReducer(state: SessionDraft, action: DraftAction): SessionDraft {
@@ -36,6 +47,22 @@ function draftReducer(state: SessionDraft, action: DraftAction): SessionDraft {
     }
     case "setAttendees":
       return { ...state, attendee_ids: action.ids };
+    case "addEntry":
+      return { ...state, entries: [...state.entries, action.entry] };
+    case "updateEntry":
+      return {
+        ...state,
+        entries: state.entries.map((e) =>
+          e.uid === action.uid ? action.entry : e,
+        ),
+      };
+    case "removeEntry":
+      return {
+        ...state,
+        entries: state.entries.filter((e) => e.uid !== action.uid),
+      };
+    case "setGoods":
+      return { ...state, goods_donations: action.goods };
     case "reset":
       return action.draft;
     default:
@@ -47,7 +74,17 @@ function draftReducer(state: SessionDraft, action: DraftAction): SessionDraft {
 export interface StepProps {
   draft: SessionDraft;
   dispatch: React.Dispatch<DraftAction>;
+  /** 활성 회원 전체 (가나다순) */
   members: Member[];
+  /** 활성 분류 전체 (수입·지출) */
+  categories: Category[];
+  /** 연회비 기본 금액 */
+  defaultDueAmount: number;
+  /** 업로드된 은행 거래 (수입·지출 공유) */
+  bankTxs: BankTransaction[];
+  setBankTxs: React.Dispatch<React.SetStateAction<BankTransaction[]>>;
+  /** Supabase 연결 여부 (은행 가져오기 가용) */
+  configured: boolean;
 }
 
 const STEPS = [
@@ -92,6 +129,9 @@ export default function SessionForm({
   carryOver,
   today,
   members,
+  categories,
+  defaultDueAmount,
+  configured,
 }: {
   nextNumber: number;
   defaultChairperson: string;
@@ -99,6 +139,9 @@ export default function SessionForm({
   carryOver: number;
   today: string;
   members: Member[];
+  categories: Category[];
+  defaultDueAmount: number;
+  configured: boolean;
 }) {
   const [draft, dispatch] = useReducer(
     draftReducer,
@@ -106,6 +149,7 @@ export default function SessionForm({
     initDraft,
   );
   const [step, setStep] = useState(1);
+  const [bankTxs, setBankTxs] = useState<BankTransaction[]>([]);
 
   // Step1 진행 조건: 장소·시작일 필수, 다박이면 종료일 필수
   const step1Ready =
@@ -122,7 +166,16 @@ export default function SessionForm({
     setStep((s) => Math.min(STEPS.length, s + 1));
   }
 
-  const stepProps: StepProps = { draft, dispatch, members };
+  const stepProps: StepProps = {
+    draft,
+    dispatch,
+    members,
+    categories,
+    defaultDueAmount,
+    bankTxs,
+    setBankTxs,
+    configured,
+  };
 
   return (
     <div className="space-y-6">

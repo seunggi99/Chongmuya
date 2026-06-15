@@ -3,8 +3,8 @@ import SetupNotice from "@/components/common/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getNextSessionNumber, getCurrentBalance } from "@/lib/sessions";
 import { getMembers } from "@/lib/members";
-import { getClubSettings } from "@/lib/categories";
-import type { Member } from "@/types";
+import { getClubSettings, getCategories } from "@/lib/categories";
+import type { Category, Member } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -22,21 +22,27 @@ export default async function NewSessionPage() {
   let treasurer = "";
   let carryOver = 0;
   let members: Member[] = [];
+  let categories: Category[] = [];
+  let defaultDueAmount = 100_000;
   let loadError: string | null = null;
 
   if (configured) {
     try {
-      const [number, settings, balance, memberList] = await Promise.all([
-        getNextSessionNumber(),
-        getClubSettings(),
-        getCurrentBalance(),
-        getMembers(),
-      ]);
+      const [number, settings, balance, memberList, categoryList] =
+        await Promise.all([
+          getNextSessionNumber(),
+          getClubSettings(),
+          getCurrentBalance(),
+          getMembers(),
+          getCategories({ includeInactive: false }),
+        ]);
       nextNumber = number;
       chairperson = settings.default_chairperson ?? "";
       treasurer = settings.default_treasurer ?? "";
+      defaultDueAmount = settings.default_due_amount;
       carryOver = balance;
       members = memberList;
+      categories = categoryList;
     } catch (e) {
       loadError =
         e instanceof Error
@@ -69,6 +75,9 @@ export default async function NewSessionPage() {
           carryOver={carryOver}
           today={todayKST()}
           members={members}
+          categories={categories}
+          defaultDueAmount={defaultDueAmount}
+          configured={configured}
         />
       )}
     </div>

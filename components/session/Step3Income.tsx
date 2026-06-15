@@ -1,14 +1,25 @@
 "use client";
 
-import type { FC } from "react";
-import StepStub from "@/components/session/StepStub";
+import EntryStep from "@/components/session/EntryStep";
+import GoodsDonation from "@/components/entry/GoodsDonation";
 import type { StepProps } from "@/components/session/SessionForm";
 
-const Step3Income: FC<StepProps> = () => (
-  <StepStub
-    title="수입"
-    description="은행내역 가져오기 또는 직접 입력 — 분류·상세, 당일회비·찬조·연회비(회원 선택형), 물품찬조."
-  />
-);
+export default function Step3Income(props: StepProps) {
+  return (
+    <div className="space-y-6">
+      <h2 className="text-lg font-bold">수입</h2>
 
-export default Step3Income;
+      <EntryStep {...props} kind="income" allowReceipts={false} />
+
+      {/* 물품 찬조 (금액 없음) */}
+      <div className="border-t border-gray-100 pt-5">
+        <GoodsDonation
+          items={props.draft.goods_donations}
+          onChange={(goods) =>
+            props.dispatch({ type: "setGoods", goods })
+          }
+        />
+      </div>
+    </div>
+  );
+}
