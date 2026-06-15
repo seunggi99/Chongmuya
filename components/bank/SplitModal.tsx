@@ -32,6 +32,7 @@ export default function SplitModal({
   allMembers,
   feePerPerson,
   defaultDueAmount,
+  duesExcludedMemberIds = [],
   onClose,
   onConfirm,
 }: {
@@ -42,6 +43,8 @@ export default function SplitModal({
   allMembers: Member[];
   feePerPerson: number;
   defaultDueAmount: number;
+  /** 연회비 분류 선택 시 제외할 회원 id (납부완료) */
+  duesExcludedMemberIds?: string[];
   onClose: () => void;
   onConfirm: (entries: EntryDraft[]) => void;
 }) {
@@ -145,6 +148,7 @@ export default function SplitModal({
               allMembers={allMembers}
               feePerPerson={feePerPerson}
               defaultDueAmount={defaultDueAmount}
+              duesExcludedMemberIds={duesExcludedMemberIds}
               onChange={(e) => updateRow(row.uid, e)}
               onRemove={() => removeRow(row.uid)}
             />

@@ -56,6 +56,32 @@ export function entriesTotal(entries: EntryDraft[]): number {
   return entries.reduce((sum, e) => sum + entryTotal(e), 0);
 }
 
+/**
+ * 연회비 entry 의 회원 선택에서 제외할 회원 id 목록.
+ *  - 이미 올해 연회비를 납부한 회원(paidMemberIds)
+ *  - 같은 일지의 다른 연회비 entry 에서 이미 선택한 회원(중복 기록 방지)
+ * 현재 entry 본인이 선택한 회원은 제외하지 않는다(토글 유지).
+ */
+export function annualDuesExcludedMemberIds(
+  draft: SessionDraft,
+  categories: Category[],
+  currentEntryUid: string,
+  paidMemberIds: string[],
+): string[] {
+  const annualCatIds = new Set(
+    categories.filter((c) => c.special === "annual_dues").map((c) => c.id),
+  );
+  const peerSelected = draft.entries
+    .filter(
+      (e) =>
+        e.uid !== currentEntryUid &&
+        e.category_id != null &&
+        annualCatIds.has(e.category_id),
+    )
+    .flatMap((e) => e.member_ids);
+  return Array.from(new Set([...paidMemberIds, ...peerSelected]));
+}
+
 /** 회원연동 분류 여부 (당일회비/찬조/연회비) */
 export function isMemberLinked(cat: Category | null | undefined): boolean {
   return (

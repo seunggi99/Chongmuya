@@ -90,6 +90,8 @@ export interface StepProps {
   sessions: Session[];
   /** 직전 회차 총잔액 = 자동 이월금 (수동 보정 되돌리기용) */
   autoCarryOver: number;
+  /** 올해 연회비 납부완료 회원 id (연회비 선택 목록에서 제외) */
+  paidDuesMemberIds: string[];
 }
 
 const STEPS = [
@@ -138,6 +140,7 @@ export default function SessionForm({
   defaultDueAmount,
   configured,
   sessions,
+  paidDuesMemberIds,
 }: {
   nextNumber: number;
   defaultChairperson: string;
@@ -149,6 +152,7 @@ export default function SessionForm({
   defaultDueAmount: number;
   configured: boolean;
   sessions: Session[];
+  paidDuesMemberIds: string[];
 }) {
   const [draft, dispatch] = useReducer(
     draftReducer,
@@ -184,6 +188,7 @@ export default function SessionForm({
     configured,
     sessions,
     autoCarryOver: carryOver,
+    paidDuesMemberIds,
   };
 
   return (

@@ -6,7 +6,8 @@ import {
   getCurrentBalance,
   getSessionList,
 } from "@/lib/sessions";
-import { getMembers } from "@/lib/members";
+import { getMembersWithDues } from "@/lib/members";
+import { currentYearLabel } from "@/lib/dues";
 import { getClubSettings, getCategories } from "@/lib/categories";
 import type { Category, Member, Session } from "@/types";
 
@@ -28,17 +29,19 @@ export default async function NewSessionPage() {
   let members: Member[] = [];
   let categories: Category[] = [];
   let sessions: Session[] = [];
+  let paidDuesMemberIds: string[] = [];
   let defaultDueAmount = 100_000;
   let loadError: string | null = null;
 
   if (configured) {
     try {
-      const [number, settings, balance, memberList, categoryList, sessionList] =
+      const yearLabel = await currentYearLabel();
+      const [number, settings, balance, duesRes, categoryList, sessionList] =
         await Promise.all([
           getNextSessionNumber(),
           getClubSettings(),
           getCurrentBalance(),
-          getMembers(),
+          getMembersWithDues(yearLabel),
           getCategories({ includeInactive: false }),
           getSessionList(),
         ]);
@@ -47,7 +50,8 @@ export default async function NewSessionPage() {
       treasurer = settings.default_treasurer ?? "";
       defaultDueAmount = settings.default_due_amount;
       carryOver = balance;
-      members = memberList;
+      members = duesRes.members;
+      paidDuesMemberIds = duesRes.paidMemberIds;
       categories = categoryList;
       sessions = sessionList;
     } catch (e) {
@@ -86,6 +90,7 @@ export default async function NewSessionPage() {
           defaultDueAmount={defaultDueAmount}
           configured={configured}
           sessions={sessions}
+          paidDuesMemberIds={paidDuesMemberIds}
         />
       )}
     </div>

@@ -4,13 +4,18 @@ import { useMemo } from "react";
 import { Plus, ArrowRightLeft } from "lucide-react";
 import CategoryEntry from "@/components/entry/CategoryEntry";
 import { formatWon } from "@/lib/format";
-import { emptyEntry, entriesTotal } from "@/lib/sessionDraft";
+import {
+  annualDuesExcludedMemberIds,
+  emptyEntry,
+  entriesTotal,
+} from "@/lib/sessionDraft";
 import type {
   Category,
   EntryDraft,
   EntryKind,
   Member,
   Session,
+  SessionDraft,
 } from "@/types";
 import type { StepProps } from "@/components/session/SessionForm";
 
@@ -21,6 +26,7 @@ export default function Step5Cross({
   categories,
   defaultDueAmount,
   sessions,
+  paidDuesMemberIds,
 }: StepProps) {
   const attendees = useMemo(
     () => members.filter((m) => draft.attendee_ids.includes(m.id)),
@@ -56,6 +62,8 @@ export default function Step5Cross({
         attendees={attendees}
         members={members}
         categories={categories}
+        draft={draft}
+        paidDuesMemberIds={paidDuesMemberIds}
         feePerPerson={draft.fee_per_person}
         defaultDueAmount={defaultDueAmount}
         onAdd={() => addCross("income")}
@@ -71,6 +79,8 @@ export default function Step5Cross({
         attendees={attendees}
         members={members}
         categories={categories}
+        draft={draft}
+        paidDuesMemberIds={paidDuesMemberIds}
         feePerPerson={draft.fee_per_person}
         defaultDueAmount={defaultDueAmount}
         onAdd={() => addCross("expense")}
@@ -89,6 +99,8 @@ function CrossSection({
   attendees,
   members,
   categories,
+  draft,
+  paidDuesMemberIds,
   feePerPerson,
   defaultDueAmount,
   onAdd,
@@ -102,6 +114,8 @@ function CrossSection({
   attendees: Member[];
   members: Member[];
   categories: Category[];
+  draft: SessionDraft;
+  paidDuesMemberIds: string[];
   feePerPerson: number;
   defaultDueAmount: number;
   onAdd: () => void;
@@ -169,6 +183,12 @@ function CrossSection({
                 allMembers={members}
                 feePerPerson={feePerPerson}
                 defaultDueAmount={defaultDueAmount}
+                duesExcludedMemberIds={annualDuesExcludedMemberIds(
+                  draft,
+                  categories,
+                  entry.uid,
+                  paidDuesMemberIds,
+                )}
                 onChange={(e) => onChange(entry.uid, e)}
                 onRemove={() => onRemove(entry.uid)}
               />

@@ -7,7 +7,11 @@ import TransactionList from "@/components/bank/TransactionList";
 import SplitModal, { type SplitMode } from "@/components/bank/SplitModal";
 import CategoryEntry from "@/components/entry/CategoryEntry";
 import { formatWon } from "@/lib/format";
-import { emptyEntry, entriesTotal } from "@/lib/sessionDraft";
+import {
+  annualDuesExcludedMemberIds,
+  emptyEntry,
+  entriesTotal,
+} from "@/lib/sessionDraft";
 import type { BankTransaction, EntryDraft, EntryKind } from "@/types";
 import type { StepProps } from "@/components/session/SessionForm";
 
@@ -28,6 +32,7 @@ export default function EntryStep({
   bankTxs,
   setBankTxs,
   configured,
+  paidDuesMemberIds,
   kind,
   allowReceipts,
 }: StepProps & { kind: EntryKind; allowReceipts: boolean }) {
@@ -135,6 +140,12 @@ export default function EntryStep({
               allMembers={members}
               feePerPerson={draft.fee_per_person}
               defaultDueAmount={defaultDueAmount}
+              duesExcludedMemberIds={annualDuesExcludedMemberIds(
+                draft,
+                categories,
+                entry.uid,
+                paidDuesMemberIds,
+              )}
               allowReceipts={allowReceipts}
               onChange={(e) => dispatch({ type: "updateEntry", uid: entry.uid, entry: e })}
               onRemove={() => removeEntry(entry)}
@@ -166,6 +177,7 @@ export default function EntryStep({
         allMembers={members}
         feePerPerson={draft.fee_per_person}
         defaultDueAmount={defaultDueAmount}
+        duesExcludedMemberIds={paidDuesMemberIds}
         onClose={() => setSplit(null)}
         onConfirm={confirmSplit}
       />

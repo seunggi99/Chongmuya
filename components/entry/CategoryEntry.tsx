@@ -36,6 +36,7 @@ export default function CategoryEntry({
   allMembers,
   feePerPerson,
   defaultDueAmount,
+  duesExcludedMemberIds = [],
   allowReceipts = false,
   onChange,
   onRemove,
@@ -49,6 +50,8 @@ export default function CategoryEntry({
   allMembers: Member[];
   feePerPerson: number;
   defaultDueAmount: number;
+  /** 연회비일 때 목록에서 제외할 회원 id (납부완료·중복선택 방지). 본인 선택분은 유지 */
+  duesExcludedMemberIds?: string[];
   allowReceipts?: boolean;
   onChange: (entry: EntryDraft) => void;
   onRemove: () => void;
@@ -123,7 +126,19 @@ export default function CategoryEntry({
     });
   }
 
-  const memberPool = category?.special === "daily_fee" ? attendees : allMembers;
+  // 회원연동 분류별 후보 풀 + 빈 풀 안내
+  let memberPool = allMembers;
+  let memberEmptyHint = "선택할 회원이 없습니다.";
+  if (category?.special === "daily_fee") {
+    memberPool = attendees;
+    memberEmptyHint = "먼저 참석자를 선택하세요 (Step2).";
+  } else if (category?.special === "annual_dues") {
+    // 미납자만 — 단, 이 entry 에서 이미 선택한 회원은 토글 유지 위해 남긴다
+    const excluded = new Set(duesExcludedMemberIds);
+    const own = new Set(entry.member_ids);
+    memberPool = allMembers.filter((m) => own.has(m.id) || !excluded.has(m.id));
+    memberEmptyHint = "올해 연회비 미납자가 없습니다.";
+  }
 
   return (
     <div className="space-y-3 rounded-xl border border-gray-100 p-4">
@@ -170,7 +185,7 @@ export default function CategoryEntry({
           pool={memberPool}
           entry={entry}
           allMembers={allMembers}
-          isDailyFee={category?.special === "daily_fee"}
+          emptyHint={memberEmptyHint}
           onToggle={toggleMember}
           onAmount={setMemberAmount}
         />
@@ -199,14 +214,14 @@ function MemberLinkedBody({
   pool,
   entry,
   allMembers,
-  isDailyFee,
+  emptyHint,
   onToggle,
   onAmount,
 }: {
   pool: Member[];
   entry: EntryDraft;
   allMembers: Member[];
-  isDailyFee: boolean;
+  emptyHint: string;
   onToggle: (member: Member) => void;
   onAmount: (index: number, amount: number) => void;
 }) {
@@ -220,11 +235,7 @@ function MemberLinkedBody({
           const m = byId.get(id);
           if (m) onToggle(m);
         }}
-        emptyHint={
-          isDailyFee
-            ? "먼저 참석자를 선택하세요 (Step2)."
-            : "선택할 회원이 없습니다."
-        }
+        emptyHint={emptyHint}
       />
 
       {entry.member_ids.length > 0 && (
