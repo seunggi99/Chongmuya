@@ -4,6 +4,22 @@ import { isSupabaseConfigured } from "@/lib/env";
 import { computeBalance } from "@/lib/balance";
 import type { Entry, Session } from "@/types";
 
+/**
+ * 다음 회차번호 제안 = 현재 최대 number + 1.
+ * 회차가 하나도 없으면 1.
+ */
+export async function getNextSessionNumber(): Promise<number> {
+  if (!isSupabaseConfigured()) return 1;
+  const { data, error } = await supabaseAdmin()
+    .from("sessions")
+    .select("number")
+    .order("number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? (data.number as number) + 1 : 1;
+}
+
 /** 최근 회차 N개 (number 내림차순) */
 export async function getRecentSessions(limit = 5): Promise<Session[]> {
   if (!isSupabaseConfigured()) return [];

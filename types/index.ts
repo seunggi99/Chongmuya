@@ -189,3 +189,57 @@ export interface SessionWithRelations extends Session {
   entries?: EntryWithDetails[];
   goods_donations?: GoodsDonation[];
 }
+
+// ─── 일지 작성 폼 draft (클라이언트 상태) ────────────────────
+// DB 저장 전 폼이 들고 있는 작성 중 상태. id/session_id 등 서버가
+// 채우는 필드는 제외하고, 화면 입력에 필요한 값만 보관한다.
+
+/** 상세항목 입력값 (한 분류 안의 식당1·버스1 …) */
+export interface EntryDetailDraft {
+  label: string;
+  amount: number; // 정수(원)
+  receipt_url?: string | null;
+}
+
+/** 분류 단위 입력값 (수입/지출 한 줄) */
+export interface EntryDraft {
+  kind: EntryKind;
+  category_id: string | null;
+  /** 선입금/선지급 귀속회차 (당일이면 null) */
+  cross_session_id: string | null;
+  /** 은행 거래 매칭(있으면) */
+  bank_tx_id: string | null;
+  details: EntryDetailDraft[];
+  /** 당일회비/찬조/연회비 명단 (그 외 분류는 빈 배열) */
+  member_ids: string[];
+}
+
+/** 물품 찬조 입력값 (금액 없음) */
+export interface GoodsDonationDraft {
+  item: string;
+  donor: string | null;
+}
+
+/** 일지 작성 6단계 폼 전체 상태 */
+export interface SessionDraft {
+  // Step1 기본정보
+  number: number;
+  type: SessionType;
+  location: string;
+  date_start: string; // YYYY-MM-DD ('' = 미입력)
+  isMultiDay: boolean; // 다박 여부 (true면 date_end 사용)
+  date_end: string | null; // 다박 종료일 (당일이면 null)
+  fee_per_person: number; // 당일회비 단가
+  note: string;
+  chairperson: string;
+  treasurer: string;
+  // Step6 이월금 (자동 세팅, 수동 보정 가능)
+  carry_over: number;
+  is_manual_carry_over: boolean;
+  // Step2 참석자 (member.id 목록)
+  attendee_ids: string[];
+  // Step3·4 수입/지출
+  entries: EntryDraft[];
+  // 물품 찬조
+  goods_donations: GoodsDonationDraft[];
+}
