@@ -18,8 +18,8 @@ export default function Sidebar() {
             <Image
               src="/logo/wordmark.svg"
               alt="총무야"
-              width={120}
-              height={29}
+              width={160}
+              height={38}
               priority
               unoptimized
             />
