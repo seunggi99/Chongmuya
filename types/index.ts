@@ -191,6 +191,44 @@ export interface SessionWithRelations extends Session {
   goods_donations?: GoodsDonation[];
 }
 
+// ─── 일지 상세/미리보기 뷰 (조회 + 계산 결과) ───────────────
+export interface PreviewDetailView {
+  label: string;
+  amount: number;
+  receipt_url: string | null;
+}
+
+export interface PreviewEntryView {
+  id: string;
+  kind: EntryKind;
+  categoryName: string;
+  special: CategorySpecial;
+  amount: number;
+  /** 교차(선입금/선지급) 귀속회차 번호 — 당일 항목이면 null */
+  crossSessionNumber: number | null;
+  details: PreviewDetailView[];
+  /** 회원연동(당일회비/찬조/연회비) 명단 */
+  memberNames: string[];
+}
+
+export interface PreviewAttendeeView {
+  name: string;
+  type: MemberType;
+}
+
+export interface PreviewGoodsView {
+  item: string;
+  donorName: string | null; // 회원명 또는 외부 찬조자 텍스트
+}
+
+export interface SessionDetailView {
+  session: Session;
+  attendees: PreviewAttendeeView[];
+  entries: PreviewEntryView[];
+  goods: PreviewGoodsView[];
+  balance: BalanceSummary;
+}
+
 // ─── 일지 작성 폼 draft (클라이언트 상태) ────────────────────
 // DB 저장 전 폼이 들고 있는 작성 중 상태. id/session_id 등 서버가
 // 채우는 필드는 제외하고, 화면 입력에 필요한 값만 보관한다.

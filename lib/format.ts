@@ -18,6 +18,11 @@ export function formatSigned(amount: number): string {
   return `${sign}${formatKRW(Math.abs(amount))}`;
 }
 
+/** "YYYY-MM-DD" → "YYYYMMDD" (파일명용) */
+export function compactDate(value: string): string {
+  return value.replace(/[^0-9]/g, "").slice(0, 8);
+}
+
 /** Date | "YYYY-MM-DD" → "YYYY. M. D" */
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return "";

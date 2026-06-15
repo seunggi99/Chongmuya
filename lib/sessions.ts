@@ -2,7 +2,16 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
 import { computeBalance } from "@/lib/balance";
-import type { Entry, Session } from "@/types";
+import type {
+  Category,
+  Entry,
+  EntryDetail,
+  Member,
+  MemberType,
+  PreviewEntryView,
+  Session,
+  SessionDetailView,
+} from "@/types";
 
 /**
  * 다음 회차번호 제안 = 현재 최대 number + 1.
@@ -18,6 +27,169 @@ export async function getNextSessionNumber(): Promise<number> {
     .maybeSingle();
   if (error) throw error;
   return data ? (data.number as number) + 1 : 1;
+}
+
+/**
+ * 일지 상세 (미리보기/출력용). 회차 + 참석자·entries·상세·회원명단·물품찬조 +
+ * 잔액 계산까지 묶어서 반환. 없으면 null.
+ * 일지 뷰 = 이 회차의 모든 entries(교차 포함) → 통장 잔액 증명.
+ */
+export async function getSessionDetail(
+  id: string,
+): Promise<SessionDetailView | null> {
+  if (!isSupabaseConfigured()) return null;
+  const sb = supabaseAdmin();
+
+  const { data: sessionRow, error: se } = await sb
+    .from("sessions")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (se) throw se;
+  if (!sessionRow) return null;
+  const session = sessionRow as Session;
+
+  const [attRes, entryRes, goodsRes, memberRes, catRes] = await Promise.all([
+    sb
+      .from("session_attendees")
+      .select("member_id, member_type_snapshot")
+      .eq("session_id", id),
+    sb
+      .from("entries")
+      .select("*")
+      .eq("session_id", id)
+      .order("sort_order", { ascending: true }),
+    sb
+      .from("goods_donations")
+      .select("item, donor, member_id")
+      .eq("session_id", id),
+    sb.from("members").select("id, name, type"),
+    sb.from("categories").select("id, name, special"),
+  ]);
+  for (const r of [attRes, entryRes, goodsRes, memberRes, catRes]) {
+    if (r.error) throw r.error;
+  }
+
+  const memberName = new Map(
+    ((memberRes.data ?? []) as Pick<Member, "id" | "name">[]).map((m) => [
+      m.id,
+      m.name,
+    ]),
+  );
+  const catMap = new Map(
+    ((catRes.data ?? []) as Pick<Category, "id" | "name" | "special">[]).map(
+      (c) => [c.id, c],
+    ),
+  );
+  const entriesRaw = (entryRes.data ?? []) as Entry[];
+  const entryIds = entriesRaw.map((e) => e.id);
+
+  // 상세항목 · 회원연결 (entry 가 있을 때만)
+  let details: EntryDetail[] = [];
+  let ems: { entry_id: string; member_id: string }[] = [];
+  if (entryIds.length > 0) {
+    const [dRes, mRes] = await Promise.all([
+      sb
+        .from("entry_details")
+        .select("*")
+        .in("entry_id", entryIds)
+        .order("sort_order", { ascending: true }),
+      sb.from("entry_members").select("entry_id, member_id").in("entry_id", entryIds),
+    ]);
+    if (dRes.error) throw dRes.error;
+    if (mRes.error) throw mRes.error;
+    details = (dRes.data ?? []) as EntryDetail[];
+    ems = (mRes.data ?? []) as { entry_id: string; member_id: string }[];
+  }
+
+  const detailsByEntry = new Map<string, EntryDetail[]>();
+  for (const d of details) {
+    const arr = detailsByEntry.get(d.entry_id) ?? [];
+    arr.push(d);
+    detailsByEntry.set(d.entry_id, arr);
+  }
+  const memberIdsByEntry = new Map<string, string[]>();
+  for (const em of ems) {
+    const arr = memberIdsByEntry.get(em.entry_id) ?? [];
+    arr.push(em.member_id);
+    memberIdsByEntry.set(em.entry_id, arr);
+  }
+
+  // 교차 귀속회차 번호
+  const crossIds = Array.from(
+    new Set(
+      entriesRaw
+        .map((e) => e.cross_session_id)
+        .filter((x): x is string => Boolean(x)),
+    ),
+  );
+  const crossNumber = new Map<string, number>();
+  if (crossIds.length > 0) {
+    const { data, error } = await sb
+      .from("sessions")
+      .select("id, number")
+      .in("id", crossIds);
+    if (error) throw error;
+    for (const r of (data ?? []) as { id: string; number: number }[]) {
+      crossNumber.set(r.id, r.number);
+    }
+  }
+
+  const entries: PreviewEntryView[] = entriesRaw.map((e) => {
+    const cat = e.category_id ? catMap.get(e.category_id) : null;
+    return {
+      id: e.id,
+      kind: e.kind,
+      categoryName: cat?.name ?? "기타",
+      special: cat?.special ?? null,
+      amount: e.amount,
+      crossSessionNumber: e.cross_session_id
+        ? crossNumber.get(e.cross_session_id) ?? null
+        : null,
+      details: (detailsByEntry.get(e.id) ?? []).map((d) => ({
+        label: d.label,
+        amount: d.amount,
+        receipt_url: d.receipt_url,
+      })),
+      memberNames: (memberIdsByEntry.get(e.id) ?? [])
+        .map((mid) => memberName.get(mid) ?? "")
+        .filter(Boolean),
+    };
+  });
+
+  const attendees = (
+    (attRes.data ?? []) as {
+      member_id: string;
+      member_type_snapshot: MemberType;
+    }[]
+  )
+    .map((a) => ({
+      name: memberName.get(a.member_id) ?? "?",
+      type: a.member_type_snapshot,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "ko-KR"));
+
+  const goods = (
+    (goodsRes.data ?? []) as {
+      item: string;
+      donor: string | null;
+      member_id: string | null;
+    }[]
+  ).map((g) => ({
+    item: g.item,
+    donorName: g.member_id ? memberName.get(g.member_id) ?? null : g.donor,
+  }));
+
+  const balance = computeBalance(
+    entriesRaw.map((e) => ({
+      kind: e.kind,
+      amount: e.amount,
+      cross_session_id: e.cross_session_id,
+    })),
+    session.carry_over,
+  );
+
+  return { session, attendees, entries, goods, balance };
 }
 
 /** 전체 회차 목록 (number 내림차순) — 교차 귀속회차 선택 등에 사용 */

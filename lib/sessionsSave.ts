@@ -206,6 +206,21 @@ export async function createSessionFromDraft(
 }
 
 /**
+ * 일지 삭제. 자식(참석자·entries·상세·회원·물품)은 FK cascade 로 함께 삭제되고,
+ * 이후 이월금 연쇄 재계산으로 후속 회차 carry_over 를 갱신한다.
+ * (annual_dues 는 session_id ON DELETE SET NULL — 납부 기록 자체는 보존)
+ */
+export async function deleteSessionById(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase 가 연결되지 않았습니다.");
+  }
+  const sb = supabaseAdmin();
+  const { error } = await sb.from("sessions").delete().eq("id", id);
+  if (error) throw error;
+  await recalcCarryOverChainInDb(sb);
+}
+
+/**
  * 전체 회차 이월금 연쇄 재계산 후, 값이 바뀐 회차만 carry_over 갱신.
  * is_manual_carry_over=true 회차는 그 값을 기준으로 사용(건너뜀).
  */

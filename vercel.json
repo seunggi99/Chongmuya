@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/export/pdf/[id]/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
