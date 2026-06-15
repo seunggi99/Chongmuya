@@ -122,7 +122,8 @@ function topTable(data: SessionDetailView): string {
     dailyFeeRow = `<tr>
       <th class="pv-lbl" colspan="2">${wrap(`당일회비<br><span class="pv-sub">1인 ${formatWon(fee)}</span>`, "c")}</th>
       <td class="pv-amt">${wrap(formatWon(fullDaily), "r")}</td>
-      <td colspan="2">${wrap(formula)}</td>
+      <th class="pv-lbl">${wrap("합계", "c")}</th>
+      <td>${wrap(formula)}</td>
     </tr>`;
   }
 
@@ -144,11 +145,14 @@ function topTable(data: SessionDetailView): string {
   // 장소·당일회비·찬조 라벨은 A+B(colspan2)로 좌측 라벨영역을 채우고,
   // 명단은 장소 값과 같은 C 열에서 시작하도록 정렬한다.
   return `<table class="pv-top">
+    <colgroup>
+      <col style="width:10%"><col style="width:13%"><col style="width:27%"><col style="width:12%"><col style="width:38%">
+    </colgroup>
     <tr>
       <th class="pv-lbl" colspan="2">${wrap("장소")}</th>
       <td>${wrap(esc(s.location))}</td>
       <th class="pv-lbl">${wrap("일자")}</th>
-      <td class="pv-cnt">${wrap(esc(dateStr))}</td>
+      <td>${wrap(esc(dateStr))}</td>
     </tr>
     <tr>
       <th class="pv-lbl pv-att" rowspan="2">${wrap(`참석자<br><span class="pv-sub">총 ${attendeeCount}명</span>`, "c")}</th>
@@ -242,8 +246,9 @@ export const PREVIEW_CSS = `
 #preview-target .pv-c-r > span { text-align:right; }
 #preview-target .pv-c-c { justify-content:center; }
 #preview-target .pv-c-c > span { text-align:center; }
-/* 상단 표 */
-#preview-target .pv-top td, #preview-target .pv-top th { border:1px solid #e5e7eb; padding:5px 10px; }
+/* 상단 표 — colgroup 폭(50/50 분할)을 강제하려 table-layout:fixed */
+#preview-target .pv-top { table-layout:fixed; }
+#preview-target .pv-top td, #preview-target .pv-top th { border:1px solid #e5e7eb; padding:5px 10px; word-break:break-word; }
 #preview-target .pv-lbl { background:#f1f5f0; color:#374151; font-weight:600; white-space:nowrap; width:1%; }
 #preview-target .pv-sublbl { font-weight:500; color:#4b5563; }
 #preview-target .pv-att { text-align:center; }
