@@ -66,7 +66,7 @@ export default function SessionDetailClient({
                 label="당일회비"
                 value={
                   s.fee_per_person > 0
-                    ? `1인 ${formatWon(s.fee_per_person)}원`
+                    ? `1인 ${formatWon(s.fee_per_person)}`
                     : "—"
                 }
               />

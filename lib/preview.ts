@@ -77,8 +77,9 @@ export function renderPreviewBody(data: SessionDetailView): string {
 
   const title = `제${s.number}차 ${SESSION_TYPE_LABEL[s.type]}`;
   const dateStr = formatDateRange(s.date_start, s.date_end);
+  // formatWon 이 이미 "원"을 붙이므로 추가로 붙이지 않는다
   const feeStr =
-    s.fee_per_person > 0 ? `1인 ${formatWon(s.fee_per_person)}원` : "—";
+    s.fee_per_person > 0 ? `1인 ${formatWon(s.fee_per_person)}` : "—";
 
   const members = attendees.filter((a) => a.type === "member");
   const generals = attendees.filter((a) => a.type === "general");
@@ -180,6 +181,8 @@ export const PREVIEW_CSS = `
 #preview-target .pv { padding:24px; max-width:780px; margin:0 auto; }
 #preview-target .pv-title { text-align:center; font-size:22px; font-weight:700; margin-bottom:16px; letter-spacing:-0.02em; }
 #preview-target table { width:100%; border-collapse:collapse; margin-bottom:12px; }
+/* html2canvas(JPG) 베이스라인 쏠림 방지: 셀 글자 수직 가운데 + 고정 줄높이 */
+#preview-target td, #preview-target th { line-height:1.4; vertical-align:middle; }
 #preview-target .pv-info th { background:#f9fafb; text-align:left; font-weight:600; color:#374151; white-space:nowrap; width:1%; padding:7px 10px; border:1px solid #e5e7eb; }
 #preview-target .pv-info td { padding:7px 10px; border:1px solid #e5e7eb; }
 #preview-target .pv-two { display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; }
@@ -187,7 +190,7 @@ export const PREVIEW_CSS = `
 #preview-target .pv-col-h { font-weight:700; padding:6px 10px; border:1px solid #e5e7eb; border-bottom:none; }
 #preview-target .pv-income { color:#16A34A; background:#f0fdf4; }
 #preview-target .pv-expense { color:#DC2626; background:#fef2f2; }
-#preview-target .pv-tbl td { padding:6px 10px; border:1px solid #e5e7eb; vertical-align:top; }
+#preview-target .pv-tbl td { padding:6px 10px; border:1px solid #e5e7eb; vertical-align:middle; }
 #preview-target .pv-cat { word-break:break-word; }
 #preview-target .pv-paren { color:#6b7280; font-size:12px; }
 #preview-target .pv-cross { color:#D97706; font-size:11px; margin-left:4px; }

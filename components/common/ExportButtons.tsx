@@ -55,6 +55,8 @@ export default function ExportButtons({
     try {
       const el = document.getElementById("preview-target");
       if (!el) throw new Error("미리보기를 찾을 수 없습니다.");
+      // 폰트(Pretendard) 로딩 완료 후 캡처해야 글자 메트릭이 어긋나지 않음
+      if (document.fonts?.ready) await document.fonts.ready;
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(el, {
         scale: 2,
