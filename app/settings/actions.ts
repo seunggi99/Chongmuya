@@ -106,6 +106,8 @@ export async function saveClubInfoAction(input: {
   club_name: string;
   default_chairperson: string | null;
   default_treasurer: string | null;
+  dues_renewal_month: number;
+  default_due_amount: number;
 }): Promise<ActionResult<ClubSettings>> {
   try {
     const settings = await updateClubSettings(input);

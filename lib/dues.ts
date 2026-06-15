@@ -7,13 +7,38 @@ import type { AnnualDue, DuesRate, DuesStatusRow } from "@/types";
 export { DEFAULT_DUE_AMOUNT } from "@/lib/constants";
 
 /**
- * 현재 연회비 year_label.
- * 달력연도 기준 2자리 ("26~27"). 모임 갱신월이 다르면 이 함수만 조정하면 된다.
+ * 현재 연회비 year_label 계산.
+ * club_settings.dues_renewal_month(갱신월)를 읽어:
+ *   - 현재 월 >= 갱신월 → "YY~(YY+1)"
+ *   - 현재 월 <  갱신월 → "(YY-1)~YY"
+ * club_settings 를 못 읽으면 갱신월 3 으로 폴백.
+ * 예) 갱신월=3, 2026.6 → "26~27" / 2026.2 → "25~26"
  */
-export function currentYearLabel(date: Date = new Date()): string {
+export async function currentYearLabel(date: Date = new Date()): Promise<string> {
+  const renewalMonth = await getDuesRenewalMonth();
+  const month = date.getMonth() + 1;
   const yy = date.getFullYear() % 100;
-  const next = (yy + 1) % 100;
-  return `${pad2(yy)}~${pad2(next)}`;
+  if (month >= renewalMonth) {
+    return `${pad2(yy)}~${pad2((yy + 1) % 100)}`;
+  }
+  return `${pad2((yy + 99) % 100)}~${pad2(yy)}`;
+}
+
+/** 갱신월 조회 (실패 시 3 폴백) */
+async function getDuesRenewalMonth(): Promise<number> {
+  if (!isSupabaseConfigured()) return 3;
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from("club_settings")
+      .select("dues_renewal_month")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) throw error;
+    const m = data?.dues_renewal_month;
+    return typeof m === "number" && m >= 1 && m <= 12 ? m : 3;
+  } catch {
+    return 3;
+  }
 }
 
 function pad2(n: number): string {

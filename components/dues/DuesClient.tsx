@@ -16,11 +16,13 @@ export default function DuesClient({
   initialYear,
   initialData,
   members,
+  defaultDueAmount,
 }: {
   initialYears: string[];
   initialYear: string;
   initialData: DuesYearData;
   members: Member[];
+  defaultDueAmount: number;
 }) {
   const [years, setYears] = useState<string[]>(initialYears);
   const [year, setYear] = useState(initialYear);
@@ -160,6 +162,7 @@ export default function DuesClient({
         onClose={() => setModalOpen(false)}
         members={members}
         defaultYear={year}
+        defaultAmount={defaultDueAmount}
         onRecorded={handleRecorded}
       />
     </div>

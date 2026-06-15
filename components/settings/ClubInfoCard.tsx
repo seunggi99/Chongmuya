@@ -16,6 +16,8 @@ export default function ClubInfoCard({
   const [clubName, setClubName] = useState(initial.club_name);
   const [chair, setChair] = useState(initial.default_chairperson ?? "");
   const [treasurer, setTreasurer] = useState(initial.default_treasurer ?? "");
+  const [renewalMonth, setRenewalMonth] = useState(initial.dues_renewal_month);
+  const [dueAmount, setDueAmount] = useState(initial.default_due_amount);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<
     { type: "ok" | "error"; msg: string } | null
@@ -28,6 +30,8 @@ export default function ClubInfoCard({
         club_name: clubName,
         default_chairperson: chair || null,
         default_treasurer: treasurer || null,
+        dues_renewal_month: renewalMonth,
+        default_due_amount: dueAmount,
       });
       if (res.ok) {
         setFeedback({ type: "ok", msg: "저장되었습니다." });
@@ -42,7 +46,7 @@ export default function ClubInfoCard({
       <div className="mb-4">
         <h2 className="text-lg font-bold">모임 기본정보</h2>
         <p className="mt-0.5 text-sm text-gray-500">
-          일지 작성 시 회장·총무 기본값으로 사용됩니다.
+          일지 작성 기본값(회장·총무)과 연회비 갱신 월·기본 금액을 설정합니다.
         </p>
       </div>
 
@@ -71,7 +75,35 @@ export default function ClubInfoCard({
             className={INPUT_CLS}
           />
         </Field>
+        <Field label="연회비 갱신 월">
+          <select
+            value={renewalMonth}
+            onChange={(e) => setRenewalMonth(Number(e.target.value))}
+            className={INPUT_CLS}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {m}월
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="연회비 기본 금액(원)">
+          <input
+            type="number"
+            value={dueAmount}
+            min={0}
+            step={10000}
+            onChange={(e) => setDueAmount(Number(e.target.value) || 0)}
+            className={`${INPUT_CLS} tabular`}
+          />
+        </Field>
       </div>
+
+      <p className="mt-3 text-xs text-gray-400">
+        연회비 갱신 월을 기준으로 연도(year_label)가 계산됩니다. 예) 갱신월 3월,
+        현재 6월 → 26~27 / 현재 2월 → 25~26
+      </p>
 
       <div className="mt-4 flex items-center gap-3">
         <button

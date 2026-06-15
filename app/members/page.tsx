@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function MembersPage() {
   const configured = isSupabaseConfigured();
-  const yearLabel = currentYearLabel();
+  const yearLabel = await currentYearLabel();
 
   let members: Member[] = [];
   let paidMemberIds: string[] = [];

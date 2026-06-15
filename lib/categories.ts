@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
+import { DEFAULT_DUE_AMOUNT } from "@/lib/constants";
 import type { Category, CategoryKind, ClubSettings } from "@/types";
 
 // ─── 분류 (categories) ──────────────────────────────────────
@@ -182,6 +183,8 @@ export async function getClubSettings(): Promise<ClubSettings> {
     club_name: "우리 모임",
     default_chairperson: null,
     default_treasurer: null,
+    dues_renewal_month: 3,
+    default_due_amount: DEFAULT_DUE_AMOUNT,
     updated_at: "",
   };
   if (!isSupabaseConfigured()) return fallback;
@@ -200,9 +203,18 @@ export async function updateClubSettings(input: {
   club_name: string;
   default_chairperson: string | null;
   default_treasurer: string | null;
+  dues_renewal_month: number;
+  default_due_amount: number;
 }): Promise<ClubSettings> {
   const name = input.club_name.trim();
   if (!name) throw new Error("모임 이름을 입력하세요.");
+
+  const month = Math.trunc(input.dues_renewal_month);
+  if (month < 1 || month > 12) {
+    throw new Error("연회비 갱신 월은 1~12 사이여야 합니다.");
+  }
+  const amount = Math.trunc(input.default_due_amount);
+  if (amount < 0) throw new Error("연회비 기본 금액이 올바르지 않습니다.");
 
   const { data, error } = await supabaseAdmin()
     .from("club_settings")
@@ -211,6 +223,8 @@ export async function updateClubSettings(input: {
       club_name: name,
       default_chairperson: input.default_chairperson?.trim() || null,
       default_treasurer: input.default_treasurer?.trim() || null,
+      dues_renewal_month: month,
+      default_due_amount: amount,
     })
     .select("*")
     .single();

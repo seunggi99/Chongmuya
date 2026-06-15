@@ -22,17 +22,19 @@ export default function RecordDueModal({
   onClose,
   members,
   defaultYear,
+  defaultAmount = DEFAULT_DUE_AMOUNT,
   onRecorded,
 }: {
   open: boolean;
   onClose: () => void;
   members: Member[];
   defaultYear: string;
+  defaultAmount?: number;
   onRecorded: (yearLabel: string, data: DuesYearData) => void;
 }) {
   const [memberId, setMemberId] = useState("");
   const [yearLabel, setYearLabel] = useState(defaultYear);
-  const [amount, setAmount] = useState(DEFAULT_DUE_AMOUNT);
+  const [amount, setAmount] = useState(defaultAmount);
   const [paidAt, setPaidAt] = useState(todayISO());
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

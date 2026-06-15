@@ -140,6 +140,8 @@ export interface ClubSettings {
   club_name: string;
   default_chairperson: string | null;
   default_treasurer: string | null;
+  dues_renewal_month: number; // 연회비 갱신 월 (1~12), year_label 계산 기준
+  default_due_amount: number; // 연회비 기본 금액(원)
   updated_at: string;
 }
 
