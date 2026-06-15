@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { sessionTitle } from "@/lib/sessionLabel";
-import type { Session } from "@/types";
+import type { Session, SessionTypeRow } from "@/types";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -27,10 +27,12 @@ function covers(s: Session, dayStr: string): boolean {
  */
 export default function EventCalendar({
   sessions,
+  types,
   today,
   onPickDate,
 }: {
   sessions: Session[];
+  types: SessionTypeRow[];
   today: string; // YYYY-MM-DD
   onPickDate: (date: string) => void;
 }) {
@@ -145,7 +147,7 @@ export default function EventCalendar({
                       key={s.id}
                       href={href}
                       onClick={(e) => e.stopPropagation()}
-                      title={sessionTitle(s)}
+                      title={sessionTitle(s, types)}
                       className={[
                         "block truncate rounded px-1 py-0.5 text-[11px] font-medium",
                         completed
@@ -153,7 +155,7 @@ export default function EventCalendar({
                           : "bg-gray-100 text-gray-500",
                       ].join(" ")}
                     >
-                      {sessionTitle(s)}
+                      {sessionTitle(s, types)}
                     </Link>
                   );
                 })}

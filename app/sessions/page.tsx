@@ -4,7 +4,8 @@ import SessionsClient from "@/components/session/SessionsClient";
 import SetupNotice from "@/components/common/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getSessionSummaries } from "@/lib/sessions";
-import type { SessionSummary } from "@/types";
+import { getSessionTypes } from "@/lib/sessionTypes";
+import type { SessionSummary, SessionTypeRow } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,14 @@ export default async function SessionsPage() {
   const configured = isSupabaseConfigured();
 
   let summaries: SessionSummary[] = [];
+  let types: SessionTypeRow[] = [];
   let loadError: string | null = null;
   if (configured) {
     try {
-      summaries = await getSessionSummaries();
+      [summaries, types] = await Promise.all([
+        getSessionSummaries(),
+        getSessionTypes(),
+      ]);
     } catch (e) {
       loadError =
         e instanceof Error
@@ -58,7 +63,9 @@ export default async function SessionsPage() {
         </div>
       )}
 
-      {configured && !loadError && <SessionsClient summaries={summaries} />}
+      {configured && !loadError && (
+        <SessionsClient summaries={summaries} types={types} />
+      )}
     </div>
   );
 }

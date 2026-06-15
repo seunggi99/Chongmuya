@@ -4,27 +4,28 @@ import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import Modal from "@/components/common/Modal";
 import { createEventAction } from "@/app/events/actions";
-import { SESSION_TYPE_LABEL, type SessionType, type Session } from "@/types";
+import type { Session, SessionTypeRow } from "@/types";
 
 const INPUT_CLS =
   "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary";
-
-const TYPES = Object.keys(SESSION_TYPE_LABEL) as SessionType[];
 
 export default function AddEventModal({
   open,
   onClose,
   defaultDate,
+  types,
   onCreated,
 }: {
   open: boolean;
   onClose: () => void;
   /** 달력 날짜 클릭으로 열렸을 때 기본 시작일 */
   defaultDate?: string;
+  types: SessionTypeRow[];
   onCreated: (sessions: Session[]) => void;
 }) {
+  const defaultType = types[0]?.code ?? "hike";
   const [name, setName] = useState("");
-  const [type, setType] = useState<SessionType>("hike");
+  const [type, setType] = useState(defaultType);
   const [location, setLocation] = useState("");
   const [dateStart, setDateStart] = useState(defaultDate ?? "");
   const [dateEnd, setDateEnd] = useState("");
@@ -33,9 +34,11 @@ export default function AddEventModal({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const usesNumber = Boolean(types.find((t) => t.code === type)?.uses_number);
+
   function reset() {
     setName("");
-    setType("hike");
+    setType(defaultType);
     setLocation("");
     setDateStart(defaultDate ?? "");
     setDateEnd("");
@@ -96,18 +99,18 @@ export default function AddEventModal({
           <Field label="유형">
             <select
               value={type}
-              onChange={(e) => setType(e.target.value as SessionType)}
+              onChange={(e) => setType(e.target.value)}
               className={INPUT_CLS}
             >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {SESSION_TYPE_LABEL[t]}
+              {types.map((t) => (
+                <option key={t.code} value={t.code}>
+                  {t.name}
                 </option>
               ))}
             </select>
           </Field>
-          {/* 회차번호 — 산행만 (그 외 유형은 날짜 기반 라벨) */}
-          {type === "hike" && (
+          {/* 회차번호 — uses_number 유형만 (그 외는 날짜 기반 라벨) */}
+          {usesNumber && (
             <Field label="회차번호" hint="선택">
               <input
                 type="number"

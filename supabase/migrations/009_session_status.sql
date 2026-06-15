@@ -23,4 +23,5 @@ alter table public.sessions
   alter column number drop not null;
 
 create index if not exists idx_sessions_status on public.sessions(status);
+
 create index if not exists idx_sessions_date_start on public.sessions(date_start);

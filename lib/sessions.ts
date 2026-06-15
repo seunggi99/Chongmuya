@@ -2,8 +2,13 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
 import { computeBalance } from "@/lib/balance";
-import { sessionShortLabel } from "@/lib/sessionLabel";
-import { typeUsesNumber } from "@/lib/sessionTypes";
+import {
+  sessionShortLabel,
+  sessionTitle,
+  sessionFileBase,
+  typeName,
+} from "@/lib/sessionLabel";
+import { getSessionTypes, typeUsesNumber } from "@/lib/sessionTypes";
 import type {
   Category,
   Entry,
@@ -66,8 +71,8 @@ export async function createEventSession(input: {
       location,
       date_start: input.date_start,
       date_end: input.date_end || null,
-      // 회차번호는 산행에만 부여
-      number: input.type === "hike" ? input.number ?? null : null,
+      // 회차번호는 uses_number 유형에만 부여
+      number: (await typeUsesNumber(input.type)) ? input.number ?? null : null,
       status: "planned",
     })
     .select("*")
@@ -123,6 +128,7 @@ export async function getSessionDetail(
   if (se) throw se;
   if (!sessionRow) return null;
   const session = sessionRow as Session;
+  const types = await getSessionTypes({ includeInactive: true });
 
   const [attRes, entryRes, goodsRes, memberRes, catRes] = await Promise.all([
     sb
@@ -213,7 +219,7 @@ export async function getSessionDetail(
       type: SessionType;
       date_start: string;
     }[]) {
-      crossLabel.set(r.id, sessionShortLabel(r));
+      crossLabel.set(r.id, sessionShortLabel(r, types));
     }
   }
 
@@ -304,7 +310,18 @@ export async function getSessionDetail(
     prepaidDailyFeeNames = names.sort((a, b) => a.localeCompare(b, "ko-KR"));
   }
 
-  return { session, attendees, entries, goods, balance, prepaidDailyFeeNames };
+  return {
+    session,
+    attendees,
+    entries,
+    goods,
+    balance,
+    prepaidDailyFeeNames,
+    title: sessionTitle(session, types),
+    shortLabel: sessionShortLabel(session, types),
+    fileBase: sessionFileBase(session, types),
+    typeName: typeName(session.type, types),
+  };
 }
 
 /**

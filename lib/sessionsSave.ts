@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/env";
 import { recalcCarryOverChain } from "@/lib/balance";
 import { currentYearLabel } from "@/lib/dues";
 import { collectDraftIssues, isMemberLinked } from "@/lib/sessionDraft";
+import { typeUsesNumber } from "@/lib/sessionTypes";
 import type { Category, Member, SessionDraft } from "@/types";
 
 type SupabaseAdmin = ReturnType<typeof supabaseAdmin>;
@@ -53,16 +54,17 @@ export async function createSessionFromDraft(
   const catById = new Map(categories.map((c) => [c.id, c] as const));
   const memTypeById = new Map(members.map((m) => [m.id, m.type] as const));
 
-  // 2. 서버측 재검증 (클라이언트와 동일 규칙)
-  const issues = collectDraftIssues(draft, categories);
+  // 2. 서버측 재검증 (클라이언트와 동일 규칙). 회차번호 필수 여부는 유형 uses_number
+  const usesNumber = await typeUsesNumber(draft.type);
+  const issues = collectDraftIssues(draft, categories, usesNumber);
   if (issues.length > 0) {
     throw new Error(issues[0]);
   }
 
   // 세션 필드 (insert/update 공용)
-  // 회차번호는 산행에만 부여 — 그 외 유형은 null
+  // 회차번호는 uses_number 유형에만 부여 — 그 외 유형은 null
   const sessionFields = {
-    number: draft.type === "hike" ? draft.number : null,
+    number: usesNumber ? draft.number : null,
     name: draft.name.trim() || null,
     type: draft.type,
     location: draft.location.trim(),

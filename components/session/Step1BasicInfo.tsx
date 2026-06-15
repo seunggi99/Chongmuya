@@ -1,13 +1,10 @@
 "use client";
 
-import { SESSION_TYPE_LABEL, type SessionType } from "@/types";
 import { diffNights } from "@/lib/format";
 import type { StepProps } from "@/components/session/SessionForm";
 
 const INPUT_CLS =
   "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary";
-
-const SESSION_TYPES = Object.keys(SESSION_TYPE_LABEL) as SessionType[];
 
 /** "YYYY-MM-DD" → 로컬 자정 Date (타임존 밀림 방지) */
 function toDate(value: string): Date | null {
@@ -16,12 +13,17 @@ function toDate(value: string): Date | null {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
-export default function Step1BasicInfo({ draft, dispatch }: StepProps) {
+export default function Step1BasicInfo({ draft, dispatch, types }: StepProps) {
   // 다박 기간 라벨 (N박 M일)
   const start = toDate(draft.date_start);
   const end = draft.date_end ? toDate(draft.date_end) : null;
   const nights = start && end ? diffNights(start, end) : 0;
   const rangeInvalid = Boolean(start && end && end.getTime() < start.getTime());
+
+  // 선택 유형이 회차번호를 쓰는지
+  const usesNumber = Boolean(
+    types.find((t) => t.code === draft.type)?.uses_number,
+  );
 
   return (
     <div className="space-y-5">
@@ -33,24 +35,21 @@ export default function Step1BasicInfo({ draft, dispatch }: StepProps) {
           <select
             value={draft.type}
             onChange={(e) =>
-              dispatch({
-                type: "patch",
-                patch: { type: e.target.value as SessionType },
-              })
+              dispatch({ type: "patch", patch: { type: e.target.value } })
             }
             className={INPUT_CLS}
           >
-            {SESSION_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {SESSION_TYPE_LABEL[t]}
+            {types.map((t) => (
+              <option key={t.code} value={t.code}>
+                {t.name}
               </option>
             ))}
           </select>
         </Field>
 
-        {/* 회차번호 — 산행만 (그 외 유형은 날짜 기반 라벨) */}
-        {draft.type === "hike" && (
-          <Field label="회차번호" hint="직전 산행 +1 자동 제안">
+        {/* 회차번호 — uses_number 유형만 (그 외는 날짜 기반 라벨) */}
+        {usesNumber && (
+          <Field label="회차번호" hint="같은 유형 +1 자동 제안">
             <input
               type="number"
               min={1}

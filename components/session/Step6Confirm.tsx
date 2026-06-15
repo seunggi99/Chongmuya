@@ -18,6 +18,7 @@ export default function Step6Confirm({
   dispatch,
   categories,
   autoCarryOver,
+  types,
 }: StepProps) {
   const router = useRouter();
   const [editingCarry, setEditingCarry] = useState(false);
@@ -38,9 +39,12 @@ export default function Step6Confirm({
     [draft.entries, draft.carry_over],
   );
 
+  const usesNumber = Boolean(
+    types.find((t) => t.code === draft.type)?.uses_number,
+  );
   const issues = useMemo(
-    () => collectDraftIssues(draft, categories),
-    [draft, categories],
+    () => collectDraftIssues(draft, categories, usesNumber),
+    [draft, categories, usesNumber],
   );
   const canSave = issues.length === 0 && !saving;
 

@@ -1,9 +1,11 @@
 import ClubInfoCard from "@/components/settings/ClubInfoCard";
 import CategoryListEditor from "@/components/settings/CategoryListEditor";
+import TypeListEditor from "@/components/settings/TypeListEditor";
 import SetupNotice from "@/components/common/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCategories, getClubSettings } from "@/lib/categories";
-import type { Category, ClubSettings } from "@/types";
+import { getSessionTypes } from "@/lib/sessionTypes";
+import type { Category, ClubSettings, SessionTypeRow } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -13,17 +15,20 @@ export default async function SettingsPage() {
   let expense: Category[] = [];
   let income: Category[] = [];
   let settings: ClubSettings | null = null;
+  let types: SessionTypeRow[] = [];
   let loadError: string | null = null;
 
   if (configured) {
     try {
-      const [cats, club] = await Promise.all([
+      const [cats, club, typeList] = await Promise.all([
         getCategories(),
         getClubSettings(),
+        getSessionTypes({ includeInactive: true }),
       ]);
       expense = cats.filter((c) => c.kind === "expense");
       income = cats.filter((c) => c.kind === "income");
       settings = club;
+      types = typeList;
     } catch (e) {
       loadError =
         e instanceof Error
@@ -37,7 +42,7 @@ export default async function SettingsPage() {
       <header>
         <h1 className="text-2xl font-bold">설정</h1>
         <p className="mt-1 text-sm text-gray-500">
-          모임 기본정보와 수입/지출 분류를 관리합니다.
+          모임 기본정보 · 행사 유형 · 수입/지출 분류를 관리합니다.
         </p>
       </header>
 
@@ -51,6 +56,7 @@ export default async function SettingsPage() {
       {configured && !loadError && settings && (
         <>
           <ClubInfoCard initial={settings} />
+          <TypeListEditor initial={types} />
           <div className="grid gap-4 md:grid-cols-2">
             <CategoryListEditor kind="expense" initial={expense} />
             <CategoryListEditor kind="income" initial={income} />

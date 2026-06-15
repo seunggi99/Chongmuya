@@ -4,13 +4,15 @@ import { useState } from "react";
 import { CalendarPlus } from "lucide-react";
 import EventCalendar from "@/components/events/EventCalendar";
 import AddEventModal from "@/components/events/AddEventModal";
-import type { Session } from "@/types";
+import type { Session, SessionTypeRow } from "@/types";
 
 export default function EventsClient({
   initialSessions,
+  types,
   today,
 }: {
   initialSessions: Session[];
+  types: SessionTypeRow[];
   today: string;
 }) {
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
@@ -43,6 +45,7 @@ export default function EventsClient({
 
       <EventCalendar
         sessions={sessions}
+        types={types}
         today={today}
         onPickDate={(date) => openAdd(date)}
       />
@@ -52,6 +55,7 @@ export default function EventsClient({
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         defaultDate={pickedDate}
+        types={types}
         onCreated={setSessions}
       />
     </div>

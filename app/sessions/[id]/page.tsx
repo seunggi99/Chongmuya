@@ -3,7 +3,6 @@ import SessionDetailClient from "@/components/session/SessionDetailClient";
 import SetupNotice from "@/components/common/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getSessionDetail } from "@/lib/sessions";
-import { sessionFileBase } from "@/lib/sessionLabel";
 import type { SessionDetailView } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +42,5 @@ export default async function SessionDetailPage({
   }
   if (!data) notFound();
 
-  const fileBase = sessionFileBase(data.session);
-
-  return <SessionDetailClient data={data} id={id} fileBase={fileBase} />;
+  return <SessionDetailClient data={data} id={id} fileBase={data.fileBase} />;
 }

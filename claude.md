@@ -174,6 +174,11 @@ updated_at  timestamptz default now()
   ```
   - 시드: 산행(uses_number=true,blue) · 정기총회(purple) · 정기모임(gray) ·
     시산제(green) · 여행(amber) · 번개(red). 산행만 uses_number=true.
+  - 설정 페이지 "행사 유형"에서 추가/삭제/이름·색상·uses_number 토글·드래그정렬.
+    is_system 은 삭제 불가(이름·색상·uses_number 는 변경 가능), 사용 중이면 소프트 삭제.
+  - **유형은 전부 DB 조회(getSessionTypes).** SessionType=string. 라벨/배지색/uses_number
+    는 session_types 에서 조회(lib/sessionLabel 이 types 인자 받음). `=== "hike"` 하드코딩
+    제거 — 회차번호 필수·표시·정렬 모두 uses_number 기반. (DB 미연결 시 hike 폴백)
 - **회차번호는 uses_number=true 유형에만 부여.** (기본은 산행만) 740→741… 식으로
   **같은 유형끼리** 이어진다(getNextSessionNumber=같은 유형 최대 number+1).
   uses_number 유형이 여러 개여도 각각 따로 카운트. uses_number=false 유형은

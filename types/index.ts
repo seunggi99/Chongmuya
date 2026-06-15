@@ -9,19 +9,17 @@ export type MemberType = "member" | "general"; // 정회원 / 일반회원
 export type EntryKind = "income" | "expense";
 export type CategoryKind = EntryKind;
 export type CategorySpecial = "daily_fee" | "donation" | "annual_dues" | null;
-export type SessionType =
-  | "hike" // 산행
-  | "general_meeting" // 총회
-  | "regular_meeting" // 정기모임
-  | "sansanje" // 산신제
-  | "travel" // 여행
-  | "flash"; // 번개
+/**
+ * 행사 유형 코드. 커스텀 가능(session_types.code)하므로 string.
+ * 기본 코드: hike·general_meeting·regular_meeting·sansanje·travel·flash
+ */
+export type SessionType = string;
 
 /** 행사/일지 상태: planned=행사만 등록, completed=일지 작성 완료 */
 export type SessionStatus = "planned" | "completed";
 
 // 기본 유형 라벨 (DB session_types 미연결 시 폴백). 시드 이름과 일치.
-export const SESSION_TYPE_LABEL: Record<SessionType, string> = {
+export const SESSION_TYPE_LABEL: Record<string, string> = {
   hike: "산행",
   general_meeting: "정기총회",
   regular_meeting: "정기모임",
@@ -254,6 +252,11 @@ export interface SessionDetailView {
   balance: BalanceSummary;
   /** 이 회차로 들어온 선입금(daily_fee) 선납 회원명 — 당일회비 계산식 표시용 */
   prepaidDailyFeeNames: string[];
+  // 유형(session_types) 기반으로 서버에서 미리 계산한 표시값
+  title: string; // 미리보기 제목 ("제740차 산행" / "2506 정기총회")
+  shortLabel: string; // 짧은 라벨 ("740차" / "2506 정기모임")
+  fileBase: string; // 내보내기 파일명 베이스
+  typeName: string; // 유형명
 }
 
 // ─── 일지 작성 폼 draft (클라이언트 상태) ────────────────────

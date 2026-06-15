@@ -7,9 +7,8 @@ import { ArrowLeft, Pencil, Trash2, Loader2 } from "lucide-react";
 import SessionPreview from "@/components/session/SessionPreview";
 import ExportButtons from "@/components/common/ExportButtons";
 import { deleteSessionAction } from "@/app/sessions/[id]/actions";
-import { SESSION_TYPE_LABEL, type SessionDetailView } from "@/types";
+import type { SessionDetailView } from "@/types";
 import { formatDateRange, formatWon } from "@/lib/format";
-import { sessionShortLabel } from "@/lib/sessionLabel";
 
 export default function SessionDetailClient({
   data,
@@ -26,7 +25,7 @@ export default function SessionDetailClient({
   const { session: s, balance } = data;
 
   function handleDelete() {
-    if (!confirm(`${sessionShortLabel(s)} 일지를 삭제할까요? 되돌릴 수 없습니다.`))
+    if (!confirm(`${data.shortLabel} 일지를 삭제할까요? 되돌릴 수 없습니다.`))
       return;
     setError(null);
     startTransition(async () => {
@@ -54,10 +53,8 @@ export default function SessionDetailClient({
         {/* 좌: 정보 + 액션 */}
         <aside className="space-y-4">
           <div className="rounded-xl border border-gray-100 p-5">
-            <p className="text-xs font-medium text-gray-400">
-              {SESSION_TYPE_LABEL[s.type]}
-            </p>
-            <h1 className="mt-0.5 text-xl font-bold">{sessionShortLabel(s)}</h1>
+            <p className="text-xs font-medium text-gray-400">{data.typeName}</p>
+            <h1 className="mt-0.5 text-xl font-bold">{data.shortLabel}</h1>
             <dl className="mt-4 space-y-2 text-sm">
               <Row label="장소" value={s.location} />
               <Row

@@ -2,7 +2,8 @@ import EventsClient from "@/components/events/EventsClient";
 import SetupNotice from "@/components/common/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCalendarSessions } from "@/lib/sessions";
-import type { Session } from "@/types";
+import { getSessionTypes } from "@/lib/sessionTypes";
+import type { Session, SessionTypeRow } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,14 @@ export default async function EventsPage() {
   const configured = isSupabaseConfigured();
 
   let sessions: Session[] = [];
+  let types: SessionTypeRow[] = [];
   let loadError: string | null = null;
   if (configured) {
     try {
-      sessions = await getCalendarSessions();
+      [sessions, types] = await Promise.all([
+        getCalendarSessions(),
+        getSessionTypes(),
+      ]);
     } catch (e) {
       loadError =
         e instanceof Error
@@ -45,7 +50,11 @@ export default async function EventsPage() {
       )}
 
       {configured && !loadError && (
-        <EventsClient initialSessions={sessions} today={todayKST()} />
+        <EventsClient
+          initialSessions={sessions}
+          types={types}
+          today={todayKST()}
+        />
       )}
     </div>
   );

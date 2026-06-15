@@ -10,6 +10,7 @@ import type {
   Member,
   Session,
   SessionDraft,
+  SessionTypeRow,
 } from "@/types";
 import Step1BasicInfo from "@/components/session/Step1BasicInfo";
 import Step2Attendees from "@/components/session/Step2Attendees";
@@ -92,6 +93,8 @@ export interface StepProps {
   autoCarryOver: number;
   /** 올해 연회비 납부완료 회원 id (연회비 선택 목록에서 제외) */
   paidDuesMemberIds: string[];
+  /** 행사 유형 목록 (유형 select·uses_number·라벨) */
+  types: SessionTypeRow[];
 }
 
 const STEPS = [
@@ -146,6 +149,7 @@ export default function SessionForm({
   configured,
   sessions,
   paidDuesMemberIds,
+  types,
   event = null,
 }: {
   nextNumber: number;
@@ -159,6 +163,7 @@ export default function SessionForm({
   configured: boolean;
   sessions: Session[];
   paidDuesMemberIds: string[];
+  types: SessionTypeRow[];
   /** 채워 넣을 planned 행사 (없으면 새 일지) */
   event?: Session | null;
 }) {
@@ -197,6 +202,7 @@ export default function SessionForm({
     sessions,
     autoCarryOver: carryOver,
     paidDuesMemberIds,
+    types,
   };
 
   return (

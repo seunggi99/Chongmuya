@@ -17,9 +17,10 @@ import {
   getCurrentBalance,
 } from "@/lib/sessions";
 import { getActiveMemberCount } from "@/lib/members";
+import { getSessionTypes } from "@/lib/sessionTypes";
 import { formatKRW, formatDateRange } from "@/lib/format";
-import { sessionShortLabel } from "@/lib/sessionLabel";
-import { SESSION_TYPE_LABEL, type Session } from "@/types";
+import { sessionShortLabel, typeName } from "@/lib/sessionLabel";
+import type { Session, SessionTypeRow } from "@/types";
 
 // 항상 최신 데이터 (대시보드)
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ interface DashboardData {
   monthlyExpense: number;
   memberCount: number;
   recent: Session[];
+  types: SessionTypeRow[];
   error: string | null;
 }
 
@@ -40,24 +42,33 @@ async function loadDashboard(year: number, month: number): Promise<DashboardData
     monthlyExpense: 0,
     memberCount: 0,
     recent: [],
+    types: [],
     error: null,
   };
   if (!isSupabaseConfigured()) return empty;
   try {
-    const [monthlyCount, currentBalance, monthlyExpense, memberCount, recent] =
-      await Promise.all([
-        getMonthlySessionCount(year, month),
-        getCurrentBalance(),
-        getMonthlyExpense(year, month),
-        getActiveMemberCount(),
-        getRecentSessions(5),
-      ]);
+    const [
+      monthlyCount,
+      currentBalance,
+      monthlyExpense,
+      memberCount,
+      recent,
+      types,
+    ] = await Promise.all([
+      getMonthlySessionCount(year, month),
+      getCurrentBalance(),
+      getMonthlyExpense(year, month),
+      getActiveMemberCount(),
+      getRecentSessions(5),
+      getSessionTypes(),
+    ]);
     return {
       monthlyCount,
       currentBalance,
       monthlyExpense,
       memberCount,
       recent,
+      types,
       error: null,
     };
   } catch (e) {
@@ -160,9 +171,11 @@ export default async function HomePage() {
                 >
                   <div className="min-w-0">
                     <p className="flex items-center gap-2">
-                      <span className="font-semibold">{sessionShortLabel(s)}</span>
+                      <span className="font-semibold">
+                        {sessionShortLabel(s, data.types)}
+                      </span>
                       <span className="rounded-md bg-light px-1.5 py-0.5 text-xs text-primary">
-                        {SESSION_TYPE_LABEL[s.type]}
+                        {typeName(s.type, data.types)}
                       </span>
                       <span className="truncate text-gray-700">{s.location}</span>
                     </p>

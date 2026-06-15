@@ -6,35 +6,40 @@ import { ChevronRight, Users } from "lucide-react";
 import Badge, { type BadgeColor } from "@/components/common/Badge";
 import { sessionShortLabel } from "@/lib/sessionLabel";
 import { formatDateRange, formatWon } from "@/lib/format";
-import {
-  SESSION_TYPE_LABEL,
-  type SessionSummary,
-  type SessionType,
-} from "@/types";
+import type { SessionSummary, SessionTypeRow } from "@/types";
 
 const SELECT_CLS =
   "rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary";
 
-/** 유형별 배지색 */
-const TYPE_BADGE: Record<SessionType, BadgeColor> = {
-  hike: "blue",
-  general_meeting: "purple",
-  regular_meeting: "gray",
-  sansanje: "green",
-  travel: "amber",
-  flash: "red",
-};
+const BADGE_COLORS: BadgeColor[] = [
+  "blue",
+  "green",
+  "gray",
+  "amber",
+  "red",
+  "purple",
+];
+function asBadgeColor(c: string): BadgeColor {
+  return (BADGE_COLORS as string[]).includes(c) ? (c as BadgeColor) : "gray";
+}
 
 type StatusFilter = "all" | "completed" | "planned";
 
 export default function SessionsClient({
   summaries,
+  types,
 }: {
   summaries: SessionSummary[];
+  types: SessionTypeRow[];
 }) {
   const [year, setYear] = useState("all");
-  const [type, setType] = useState<"all" | SessionType>("all");
+  const [type, setType] = useState("all");
   const [status, setStatus] = useState<StatusFilter>("all");
+
+  const typeMap = useMemo(
+    () => new Map(types.map((t) => [t.code, t] as const)),
+    [types],
+  );
 
   const years = useMemo(() => {
     const set = new Set(summaries.map((s) => s.session.date_start.slice(0, 4)));
@@ -71,14 +76,14 @@ export default function SessionsClient({
         </select>
         <select
           value={type}
-          onChange={(e) => setType(e.target.value as "all" | SessionType)}
+          onChange={(e) => setType(e.target.value)}
           className={SELECT_CLS}
           aria-label="유형 필터"
         >
           <option value="all">전체 유형</option>
-          {(Object.keys(SESSION_TYPE_LABEL) as SessionType[]).map((t) => (
-            <option key={t} value={t}>
-              {SESSION_TYPE_LABEL[t]}
+          {types.map((t) => (
+            <option key={t.code} value={t.code}>
+              {t.name}
             </option>
           ))}
         </select>
@@ -121,10 +126,10 @@ export default function SessionsClient({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold">
-                        {sessionShortLabel(s)}
+                        {sessionShortLabel(s, types)}
                       </span>
-                      <Badge color={TYPE_BADGE[s.type]}>
-                        {SESSION_TYPE_LABEL[s.type]}
+                      <Badge color={asBadgeColor(typeMap.get(s.type)?.badge_color ?? "gray")}>
+                        {typeMap.get(s.type)?.name ?? s.type}
                       </Badge>
                       {planned && <Badge color="gray">예정</Badge>}
                     </div>

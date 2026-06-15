@@ -10,7 +10,8 @@ import {
 import { getMembersWithDues } from "@/lib/members";
 import { currentYearLabel } from "@/lib/dues";
 import { getClubSettings, getCategories } from "@/lib/categories";
-import type { Category, Member, Session } from "@/types";
+import { getSessionTypes } from "@/lib/sessionTypes";
+import type { Category, Member, Session, SessionTypeRow } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function NewSessionPage({
   let sessions: Session[] = [];
   let planned: Session[] = [];
   let paidDuesMemberIds: string[] = [];
+  let types: SessionTypeRow[] = [];
   let defaultDueAmount = 100_000;
   let loadError: string | null = null;
 
@@ -51,6 +53,7 @@ export default async function NewSessionPage({
         categoryList,
         sessionList,
         plannedList,
+        typeList,
       ] = await Promise.all([
         getNextSessionNumber(),
         getClubSettings(),
@@ -59,6 +62,7 @@ export default async function NewSessionPage({
         getCategories({ includeInactive: false }),
         getSessionList(),
         getPlannedSessions(),
+        getSessionTypes(),
       ]);
       nextNumber = number;
       chairperson = settings.default_chairperson ?? "";
@@ -70,6 +74,7 @@ export default async function NewSessionPage({
       categories = categoryList;
       sessions = sessionList;
       planned = plannedList;
+      types = typeList;
     } catch (e) {
       loadError =
         e instanceof Error
@@ -110,6 +115,7 @@ export default async function NewSessionPage({
             configured,
             sessions,
             paidDuesMemberIds,
+            types,
           }}
         />
       )}

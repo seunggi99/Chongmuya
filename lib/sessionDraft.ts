@@ -99,6 +99,8 @@ export function isMemberLinked(cat: Category | null | undefined): boolean {
 export function collectDraftIssues(
   draft: SessionDraft,
   categories: Category[],
+  /** 선택 유형이 회차번호를 쓰는지 (uses_number) */
+  usesNumber: boolean,
 ): string[] {
   const issues: string[] = [];
   const catById = new Map(categories.map((c) => [c.id, c] as const));
@@ -108,12 +110,9 @@ export function collectDraftIssues(
   if (draft.isMultiDay && !draft.date_end) {
     issues.push("다박 일정의 종료일을 입력하세요.");
   }
-  // 회차번호는 산행에만 필수 (그 외 유형은 날짜 기반 라벨)
-  if (
-    draft.type === "hike" &&
-    (!Number.isInteger(draft.number) || draft.number < 1)
-  ) {
-    issues.push("산행 회차번호를 입력하세요.");
+  // 회차번호는 uses_number 유형에만 필수 (그 외는 날짜 기반 라벨)
+  if (usesNumber && (!Number.isInteger(draft.number) || draft.number < 1)) {
+    issues.push("회차번호를 입력하세요.");
   }
 
   draft.entries.forEach((entry, i) => {

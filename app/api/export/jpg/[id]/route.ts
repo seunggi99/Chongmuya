@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionDetail } from "@/lib/sessions";
 import { renderSessionExport } from "@/lib/exportRender";
-import { sessionFileBase } from "@/lib/sessionLabel";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,7 +20,7 @@ export async function GET(
     }
 
     const jpg = await renderSessionExport(data, "jpeg");
-    const fileBase = sessionFileBase(data.session);
+    const fileBase = data.fileBase;
     return new NextResponse(jpg, {
       headers: {
         "Content-Type": "image/jpeg",

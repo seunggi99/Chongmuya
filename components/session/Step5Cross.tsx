@@ -17,6 +17,7 @@ import type {
   Member,
   Session,
   SessionDraft,
+  SessionTypeRow,
 } from "@/types";
 import type { StepProps } from "@/components/session/SessionForm";
 
@@ -28,6 +29,7 @@ export default function Step5Cross({
   defaultDueAmount,
   sessions,
   paidDuesMemberIds,
+  types,
 }: StepProps) {
   const attendees = useMemo(
     () => members.filter((m) => draft.attendee_ids.includes(m.id)),
@@ -68,6 +70,7 @@ export default function Step5Cross({
         categories={categories}
         draft={draft}
         paidDuesMemberIds={paidDuesMemberIds}
+        types={types}
         feePerPerson={draft.fee_per_person}
         defaultDueAmount={defaultDueAmount}
         onAdd={() => addCross("income")}
@@ -85,6 +88,7 @@ export default function Step5Cross({
         categories={categories}
         draft={draft}
         paidDuesMemberIds={paidDuesMemberIds}
+        types={types}
         feePerPerson={draft.fee_per_person}
         defaultDueAmount={defaultDueAmount}
         onAdd={() => addCross("expense")}
@@ -105,6 +109,7 @@ function CrossSection({
   categories,
   draft,
   paidDuesMemberIds,
+  types,
   feePerPerson,
   defaultDueAmount,
   onAdd,
@@ -120,6 +125,7 @@ function CrossSection({
   categories: Category[];
   draft: SessionDraft;
   paidDuesMemberIds: string[];
+  types: SessionTypeRow[];
   feePerPerson: number;
   defaultDueAmount: number;
   onAdd: () => void;
@@ -168,7 +174,7 @@ function CrossSection({
                   <option value="">대상 회차 선택</option>
                   {sessions.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {sessionPickerLabel(s)}
+                      {sessionPickerLabel(s, types)}
                     </option>
                   ))}
                 </select>

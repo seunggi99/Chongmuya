@@ -10,7 +10,20 @@ import {
   getCategoriesByKind,
   updateClubSettings,
 } from "@/lib/categories";
-import type { Category, CategoryKind, ClubSettings } from "@/types";
+import {
+  getSessionTypes,
+  createSessionType,
+  updateSessionType,
+  deleteSessionType,
+  reactivateSessionType,
+  reorderSessionTypes,
+} from "@/lib/sessionTypes";
+import type {
+  Category,
+  CategoryKind,
+  ClubSettings,
+  SessionTypeRow,
+} from "@/types";
 import { type ActionResult, fail } from "@/lib/action-result";
 
 /** 설정 편집 화면용 목록은 비활성 분류도 포함해서 반환 */
@@ -94,6 +107,83 @@ export async function reorderCategoriesAction(
   try {
     await reorderCategories(orderedIds);
     const list = await editorList(kind);
+    revalidatePath("/settings");
+    return { ok: true, data: list };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// ─── 행사 유형(session_types) ───────────────────────────────
+function typeList() {
+  return getSessionTypes({ includeInactive: true });
+}
+
+export async function addSessionTypeAction(input: {
+  name: string;
+  uses_number: boolean;
+  badge_color: string;
+}): Promise<ActionResult<SessionTypeRow[]>> {
+  try {
+    await createSessionType(input);
+    const list = await typeList();
+    revalidatePath("/settings");
+    return { ok: true, data: list };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateSessionTypeAction(
+  id: string,
+  fields: Partial<Pick<SessionTypeRow, "name" | "uses_number" | "badge_color">>,
+): Promise<ActionResult<SessionTypeRow[]>> {
+  try {
+    await updateSessionType(id, fields);
+    const list = await typeList();
+    revalidatePath("/settings");
+    return { ok: true, data: list };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteSessionTypeAction(
+  id: string,
+): Promise<ActionResult<{ list: SessionTypeRow[]; notice: string | null }>> {
+  try {
+    const result = await deleteSessionType(id);
+    const list = await typeList();
+    revalidatePath("/settings");
+    const notice =
+      result.mode === "soft"
+        ? `이 유형을 쓰는 일지 ${result.count}건이 있어 비활성 처리됐습니다.`
+        : null;
+    return { ok: true, data: { list, notice } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function reactivateSessionTypeAction(
+  id: string,
+): Promise<ActionResult<SessionTypeRow[]>> {
+  try {
+    await reactivateSessionType(id);
+    const list = await typeList();
+    revalidatePath("/settings");
+    return { ok: true, data: list };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function reorderSessionTypesAction(
+  orderedIds: string[],
+): Promise<ActionResult<SessionTypeRow[]>> {
+  try {
+    await reorderSessionTypes(orderedIds);
+    const list = await typeList();
     revalidatePath("/settings");
     return { ok: true, data: list };
   } catch (e) {

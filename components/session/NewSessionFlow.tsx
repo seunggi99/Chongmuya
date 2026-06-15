@@ -5,7 +5,12 @@ import { CalendarCheck, FilePlus2, ArrowLeft, CalendarDays } from "lucide-react"
 import SessionForm from "@/components/session/SessionForm";
 import { formatDateRange } from "@/lib/format";
 import { sessionTitle } from "@/lib/sessionLabel";
-import type { Category, Member, Session } from "@/types";
+import type {
+  Category,
+  Member,
+  Session,
+  SessionTypeRow,
+} from "@/types";
 
 interface FormProps {
   nextNumber: number;
@@ -19,6 +24,7 @@ interface FormProps {
   configured: boolean;
   sessions: Session[];
   paidDuesMemberIds: string[];
+  types: SessionTypeRow[];
 }
 
 type Selection =
@@ -48,7 +54,7 @@ export default function NewSessionFlow({
     return { mode: "choosing" };
   });
 
-  const eventTitle = sessionTitle;
+  const eventTitle = (s: Session) => sessionTitle(s, formProps.types);
 
   if (selection.mode === "choosing") {
     return (
