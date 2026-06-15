@@ -176,7 +176,12 @@ export async function reorderCategories(orderedIds: string[]): Promise<void> {
 
 // ─── 모임 기본정보 (club_settings) ──────────────────────────
 
-/** 모임 설정 (싱글톤 id=1). 없으면 기본값 반환 */
+/**
+ * 모임 설정 (싱글톤 id=1).
+ * 행이 없거나(아직 미생성) 조회에 실패해도 throw 하지 않고 기본값을 반환한다.
+ * → 설정 페이지는 빈 상태에서도 폼이 뜨고, 저장 시 upsert 로 id=1 행이 생성된다.
+ * 구버전 스키마로 일부 컬럼(dues_renewal_month 등)이 누락돼도 기본값과 병합한다.
+ */
 export async function getClubSettings(): Promise<ClubSettings> {
   const fallback: ClubSettings = {
     id: 1,
@@ -189,13 +194,19 @@ export async function getClubSettings(): Promise<ClubSettings> {
   };
   if (!isSupabaseConfigured()) return fallback;
 
-  const { data, error } = await supabaseAdmin()
-    .from("club_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as ClubSettings) ?? fallback;
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from("club_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return fallback;
+    // 누락 컬럼은 기본값으로 보강 (null 은 그대로 유지)
+    return { ...fallback, ...(data as Partial<ClubSettings>) };
+  } catch {
+    return fallback;
+  }
 }
 
 /** 모임 기본정보 저장 (upsert) */
