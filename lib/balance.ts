@@ -107,22 +107,28 @@ export function validateSplit(
 
 /**
  * 회차들의 이월금 연쇄 재계산.
- * number 오름차순으로 정렬된 회차 목록과 각 회차의 entries 를 받아,
+ * **시간순(date_start)** 으로 정렬한 회차 목록과 각 회차의 entries 를 받아,
  * is_manual_carry_over=true 인 회차는 그 값을 기준으로 사용하고,
  * 나머지는 직전 회차의 총잔액을 carry_over 로 채운다.
+ * (산행만 number 가 있으므로 number 가 아니라 날짜 기준으로 연쇄한다.
+ *  같은 날짜면 number 오름차순 → 둘 다 없으면 입력 순서.)
  *
  * @returns 각 회차 id → { carryOver, total } 재계산 결과
  */
 export function recalcCarryOverChain(
   sessions: {
     id: string;
-    number: number;
+    number: number | null;
+    date_start: string;
     carry_over: number;
     is_manual_carry_over: boolean;
     entries: BalanceEntry[];
   }[],
 ): Map<string, { carryOver: number; total: number }> {
-  const ordered = [...sessions].sort((a, b) => a.number - b.number);
+  const ordered = [...sessions].sort((a, b) => {
+    if (a.date_start !== b.date_start) return a.date_start < b.date_start ? -1 : 1;
+    return (a.number ?? 0) - (b.number ?? 0);
+  });
   const result = new Map<string, { carryOver: number; total: number }>();
 
   let prevTotal: number | null = null;

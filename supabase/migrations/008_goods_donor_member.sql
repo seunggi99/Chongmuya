@@ -9,3 +9,4 @@ alter table public.goods_donations
     references public.members(id) on delete set null;
 
 create index if not exists idx_goods_member on public.goods_donations(member_id);
+      

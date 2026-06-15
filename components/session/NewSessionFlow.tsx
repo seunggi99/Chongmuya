@@ -4,7 +4,8 @@ import { useState } from "react";
 import { CalendarCheck, FilePlus2, ArrowLeft, CalendarDays } from "lucide-react";
 import SessionForm from "@/components/session/SessionForm";
 import { formatDateRange } from "@/lib/format";
-import { SESSION_TYPE_LABEL, type Category, type Member, type Session } from "@/types";
+import { sessionTitle } from "@/lib/sessionLabel";
+import type { Category, Member, Session } from "@/types";
 
 interface FormProps {
   nextNumber: number;
@@ -47,10 +48,7 @@ export default function NewSessionFlow({
     return { mode: "choosing" };
   });
 
-  function eventTitle(s: Session): string {
-    const base = s.name?.trim() || SESSION_TYPE_LABEL[s.type];
-    return s.number != null ? `${s.number}차 ${base}` : base;
-  }
+  const eventTitle = sessionTitle;
 
   if (selection.mode === "choosing") {
     return (

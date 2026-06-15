@@ -18,6 +18,7 @@ import {
 } from "@/lib/sessions";
 import { getActiveMemberCount } from "@/lib/members";
 import { formatKRW, formatDateRange } from "@/lib/format";
+import { sessionShortLabel } from "@/lib/sessionLabel";
 import { SESSION_TYPE_LABEL, type Session } from "@/types";
 
 // 항상 최신 데이터 (대시보드)
@@ -159,7 +160,7 @@ export default async function HomePage() {
                 >
                   <div className="min-w-0">
                     <p className="flex items-center gap-2">
-                      <span className="font-semibold">{s.number}차</span>
+                      <span className="font-semibold">{sessionShortLabel(s)}</span>
                       <span className="rounded-md bg-light px-1.5 py-0.5 text-xs text-primary">
                         {SESSION_TYPE_LABEL[s.type]}
                       </span>

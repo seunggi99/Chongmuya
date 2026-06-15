@@ -106,16 +106,19 @@ export default function AddEventModal({
               ))}
             </select>
           </Field>
-          <Field label="회차번호" hint="선택">
-            <input
-              type="number"
-              min={1}
-              value={number}
-              onChange={(e) => setNumber(e.target.value)}
-              placeholder="미정"
-              className={INPUT_CLS}
-            />
-          </Field>
+          {/* 회차번호 — 산행만 (그 외 유형은 날짜 기반 라벨) */}
+          {type === "hike" && (
+            <Field label="회차번호" hint="선택">
+              <input
+                type="number"
+                min={1}
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                placeholder="미정"
+                className={INPUT_CLS}
+              />
+            </Field>
+          )}
         </div>
 
         <Field label="장소">

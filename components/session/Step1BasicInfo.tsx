@@ -28,22 +28,6 @@ export default function Step1BasicInfo({ draft, dispatch }: StepProps) {
       <h2 className="text-lg font-bold">기본정보</h2>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* 회차번호 */}
-        <Field label="회차번호" hint="직전 회차 +1 자동 제안">
-          <input
-            type="number"
-            min={1}
-            value={draft.number}
-            onChange={(e) =>
-              dispatch({
-                type: "patch",
-                patch: { number: Number(e.target.value) || 0 },
-              })
-            }
-            className={INPUT_CLS}
-          />
-        </Field>
-
         {/* 모임 유형 */}
         <Field label="모임 유형">
           <select
@@ -63,6 +47,24 @@ export default function Step1BasicInfo({ draft, dispatch }: StepProps) {
             ))}
           </select>
         </Field>
+
+        {/* 회차번호 — 산행만 (그 외 유형은 날짜 기반 라벨) */}
+        {draft.type === "hike" && (
+          <Field label="회차번호" hint="직전 산행 +1 자동 제안">
+            <input
+              type="number"
+              min={1}
+              value={draft.number}
+              onChange={(e) =>
+                dispatch({
+                  type: "patch",
+                  patch: { number: Number(e.target.value) || 0 },
+                })
+              }
+              className={INPUT_CLS}
+            />
+          </Field>
+        )}
       </div>
 
       {/* 행사명 */}

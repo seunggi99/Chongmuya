@@ -166,6 +166,13 @@ is_manual_carry_over boolean default false
 created_at  timestamptz default now()
 updated_at  timestamptz default now()
 ```
+- **회차번호는 산행(hike)에만 부여.** 740→741→… 식으로 산행만 이어진다.
+  그 외 유형(정기총회·정기모임·시산제·여행·번개)은 number=null 로 저장하고
+  **"YYMM 유형"** 라벨로 구분한다(원본 시트명 방식). 예) 2025.6 정기총회 → "2506 정기총회".
+  - 표시는 lib/sessionLabel: sessionTitle("제740차 산행" / "2506 정기총회"),
+    sessionShortLabel("740차" / "2506 정기모임"), 교차표기·파일명도 동일 규칙.
+  - 다음 회차번호 제안 = 산행 중 최대 number+1. 폼은 유형=산행일 때만 회차번호 입력칸 노출.
+  - **정렬·이월금 연쇄는 number 가 아니라 date_start(시간순).** (산행만 번호라 번호순 불가)
 - **행사 = sessions 의 초기 상태(planned).** 별도 행사 테이블을 두지 않는다.
   행사 등록 = 기본정보만 있는 빈 session(status=planned) 생성 → 미래 행사가
   sessions 에 미리 존재하므로 **cross_session_id 로 선입금/선지급 연결이 가능**.

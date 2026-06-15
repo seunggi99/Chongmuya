@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionDetail } from "@/lib/sessions";
 import { renderSessionExport } from "@/lib/exportRender";
-import { compactDate } from "@/lib/format";
+import { sessionFileBase } from "@/lib/sessionLabel";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,7 +21,7 @@ export async function GET(
     }
 
     const pdf = await renderSessionExport(data, "pdf");
-    const fileBase = `일지_${data.session.number}차_${compactDate(data.session.date_start)}`;
+    const fileBase = sessionFileBase(data.session);
     return new NextResponse(pdf, {
       headers: {
         "Content-Type": "application/pdf",

@@ -16,14 +16,15 @@ import type {
 } from "@/types";
 
 /**
- * 다음 회차번호 제안 = 현재 최대 number + 1.
- * 번호 없는(미정) 행사는 제외. 회차가 하나도 없으면 1.
+ * 다음 회차번호 제안 = 산행(hike) 중 최대 number + 1.
+ * 회차번호는 산행에만 부여하므로 type='hike' 만 대상. 산행이 없으면 1.
  */
 export async function getNextSessionNumber(): Promise<number> {
   if (!isSupabaseConfigured()) return 1;
   const { data, error } = await supabaseAdmin()
     .from("sessions")
     .select("number")
+    .eq("type", "hike")
     .not("number", "is", null)
     .order("number", { ascending: false })
     .limit(1)
@@ -59,7 +60,8 @@ export async function createEventSession(input: {
       location,
       date_start: input.date_start,
       date_end: input.date_end || null,
-      number: input.number ?? null,
+      // 회차번호는 산행에만 부여
+      number: input.type === "hike" ? input.number ?? null : null,
       status: "planned",
     })
     .select("*")
@@ -299,25 +301,25 @@ export async function getSessionDetail(
   return { session, attendees, entries, goods, balance, prepaidDailyFeeNames };
 }
 
-/** 전체 회차 목록 (number 내림차순) — 교차 귀속회차 선택 등에 사용 */
+/** 전체 회차 목록 (시간순 내림차순) — 교차 귀속회차 선택 등에 사용 */
 export async function getSessionList(): Promise<Session[]> {
   if (!isSupabaseConfigured()) return [];
   const { data, error } = await supabaseAdmin()
     .from("sessions")
     .select("*")
-    .order("number", { ascending: false });
+    .order("date_start", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Session[];
 }
 
-/** 최근 회차 N개 (작성 완료 일지만, number 내림차순) */
+/** 최근 회차 N개 (작성 완료 일지만, 시간순 내림차순) */
 export async function getRecentSessions(limit = 5): Promise<Session[]> {
   if (!isSupabaseConfigured()) return [];
   const { data, error } = await supabaseAdmin()
     .from("sessions")
     .select("*")
     .eq("status", "completed")
-    .order("number", { ascending: false })
+    .order("date_start", { ascending: false })
     .limit(limit);
   if (error) throw error;
   return (data ?? []) as Session[];
@@ -388,8 +390,8 @@ export async function getMonthlyExpense(
 }
 
 /**
- * 현재 통장 잔액 = 가장 최근(number 최대) 회차의 총잔액.
- * 이월금이 연쇄 계산되므로 최신 회차 총잔액이 곧 현재 잔액.
+ * 현재 통장 잔액 = 가장 최근(시간순) 완료 회차의 총잔액.
+ * 이월금이 시간순으로 연쇄 계산되므로 최신 회차 총잔액이 곧 현재 잔액.
  */
 export async function getCurrentBalance(): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
@@ -398,7 +400,7 @@ export async function getCurrentBalance(): Promise<number> {
     .from("sessions")
     .select("*")
     .eq("status", "completed")
-    .order("number", { ascending: false })
+    .order("date_start", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;

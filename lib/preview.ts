@@ -7,8 +7,8 @@
  *
  * 셀 내용은 flex 래퍼(.pv-c)로 감싸 수직 가운데 정렬한다(내부 span 으로 멀티라인 허용).
  */
-import { SESSION_TYPE_LABEL } from "@/types";
 import { formatDateRange, formatKRW, formatWon } from "@/lib/format";
+import { sessionTitle } from "@/lib/sessionLabel";
 import type { PreviewEntryView, SessionDetailView } from "@/types";
 
 /** HTML 이스케이프 (DB 값이 마크업을 깨지 않도록) */
@@ -157,7 +157,7 @@ function topTable(data: SessionDetailView): string {
 export function renderPreviewBody(data: SessionDetailView): string {
   const { session: s, entries, balance } = data;
 
-  const title = `제${s.number}차 ${SESSION_TYPE_LABEL[s.type]}`;
+  const title = sessionTitle(s);
   const income = entries.filter((e) => e.kind === "income");
   const expense = entries.filter((e) => e.kind === "expense");
 

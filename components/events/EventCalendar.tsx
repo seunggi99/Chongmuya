@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { SESSION_TYPE_LABEL, type Session } from "@/types";
+import { sessionTitle } from "@/lib/sessionLabel";
+import type { Session } from "@/types";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -12,12 +13,6 @@ function pad(n: number) {
 }
 function ymd(y: number, m: number, d: number) {
   return `${y}-${pad(m)}-${pad(d)}`;
-}
-
-/** 행사 표시 제목 (행사명 없으면 유형 라벨) */
-function eventTitle(s: Session): string {
-  const base = s.name?.trim() || SESSION_TYPE_LABEL[s.type];
-  return s.number != null ? `${s.number}차 ${base}` : base;
 }
 
 /** 행사가 해당 날짜(dayStr)에 걸치는지 (ISO 문자열 비교) */
@@ -150,7 +145,7 @@ export default function EventCalendar({
                       key={s.id}
                       href={href}
                       onClick={(e) => e.stopPropagation()}
-                      title={eventTitle(s)}
+                      title={sessionTitle(s)}
                       className={[
                         "block truncate rounded px-1 py-0.5 text-[11px] font-medium",
                         completed
@@ -158,7 +153,7 @@ export default function EventCalendar({
                           : "bg-gray-100 text-gray-500",
                       ].join(" ")}
                     >
-                      {eventTitle(s)}
+                      {sessionTitle(s)}
                     </Link>
                   );
                 })}

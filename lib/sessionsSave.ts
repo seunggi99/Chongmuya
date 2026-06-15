@@ -10,7 +10,8 @@ type SupabaseAdmin = ReturnType<typeof supabaseAdmin>;
 
 interface SessionChainRow {
   id: string;
-  number: number;
+  number: number | null;
+  date_start: string;
   carry_over: number;
   is_manual_carry_over: boolean;
 }
@@ -59,8 +60,9 @@ export async function createSessionFromDraft(
   }
 
   // 세션 필드 (insert/update 공용)
+  // 회차번호는 산행에만 부여 — 그 외 유형은 null
   const sessionFields = {
-    number: draft.number,
+    number: draft.type === "hike" ? draft.number : null,
     name: draft.name.trim() || null,
     type: draft.type,
     location: draft.location.trim(),
@@ -274,7 +276,7 @@ export async function deleteSessionById(id: string): Promise<void> {
 async function recalcCarryOverChainInDb(sb: SupabaseAdmin): Promise<void> {
   const { data: sessions, error } = await sb
     .from("sessions")
-    .select("id, number, carry_over, is_manual_carry_over")
+    .select("id, number, date_start, carry_over, is_manual_carry_over")
     .eq("status", "completed");
   if (error) throw error;
   const list = (sessions ?? []) as SessionChainRow[];

@@ -108,8 +108,12 @@ export function collectDraftIssues(
   if (draft.isMultiDay && !draft.date_end) {
     issues.push("다박 일정의 종료일을 입력하세요.");
   }
-  if (!Number.isInteger(draft.number) || draft.number < 1) {
-    issues.push("회차번호가 올바르지 않습니다.");
+  // 회차번호는 산행에만 필수 (그 외 유형은 날짜 기반 라벨)
+  if (
+    draft.type === "hike" &&
+    (!Number.isInteger(draft.number) || draft.number < 1)
+  ) {
+    issues.push("산행 회차번호를 입력하세요.");
   }
 
   draft.entries.forEach((entry, i) => {

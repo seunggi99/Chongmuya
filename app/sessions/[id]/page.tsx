@@ -3,7 +3,7 @@ import SessionDetailClient from "@/components/session/SessionDetailClient";
 import SetupNotice from "@/components/common/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getSessionDetail } from "@/lib/sessions";
-import { compactDate } from "@/lib/format";
+import { sessionFileBase } from "@/lib/sessionLabel";
 import type { SessionDetailView } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +43,7 @@ export default async function SessionDetailPage({
   }
   if (!data) notFound();
 
-  const fileBase = `일지_${data.session.number}차_${compactDate(data.session.date_start)}`;
+  const fileBase = sessionFileBase(data.session);
 
   return <SessionDetailClient data={data} id={id} fileBase={fileBase} />;
 }
