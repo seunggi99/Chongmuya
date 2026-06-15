@@ -130,8 +130,15 @@ export default function CategoryEntry({
   let memberPool = allMembers;
   let memberEmptyHint = "선택할 회원이 없습니다.";
   if (category?.special === "daily_fee") {
-    memberPool = attendees;
-    memberEmptyHint = "먼저 참석자를 선택하세요 (Step2).";
+    if (entry.isCross) {
+      // 선입금(교차): 미래 회차 회비라 현재 참석자와 무관 → 전체 활성 회원에서 선택
+      memberPool = allMembers;
+      memberEmptyHint = "선택할 회원이 없습니다.";
+    } else {
+      // 당일 당일회비: 이번 회차 참석자만
+      memberPool = attendees;
+      memberEmptyHint = "먼저 참석자를 선택하세요 (Step2).";
+    }
   } else if (category?.special === "annual_dues") {
     // 미납자만 — 단, 이 entry 에서 이미 선택한 회원은 토글 유지 위해 남긴다
     const excluded = new Set(duesExcludedMemberIds);
