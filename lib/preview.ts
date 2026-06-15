@@ -91,8 +91,11 @@ function topTable(data: SessionDetailView): string {
 
   const members = attendees.filter((a) => a.type === "member");
   const generals = attendees.filter((a) => a.type === "general");
-  const nameList = (names: string[]) =>
-    names.length > 0 ? esc(names.join(" · ")) : "—";
+  // 원본 740차 방식: 명단 끝에 "/ N명" 통합 (별도 인원 칸 제거)
+  const attLine = (names: string[]) =>
+    names.length > 0
+      ? `${esc(names.join(" · "))} <span class="pv-cnt-inline">/ ${names.length}명</span>`
+      : "—";
 
   const attendeeCount = attendees.length;
   const fee = s.fee_per_person;
@@ -140,13 +143,11 @@ function topTable(data: SessionDetailView): string {
     <tr>
       <th class="pv-lbl pv-att" rowspan="2">${wrap(`참석자<br><span class="pv-sub">총 ${attendeeCount}명</span>`, "c")}</th>
       <th class="pv-lbl pv-sublbl">${wrap("회원", "c")}</th>
-      <td>${wrap(nameList(members.map((m) => m.name)))}</td>
-      <td class="pv-cnt">${wrap(`${members.length}명`, "c")}</td>
+      <td colspan="2">${wrap(attLine(members.map((m) => m.name)))}</td>
     </tr>
     <tr>
       <th class="pv-lbl pv-sublbl">${wrap("일반회원", "c")}</th>
-      <td>${wrap(nameList(generals.map((m) => m.name)))}</td>
-      <td class="pv-cnt">${wrap(`${generals.length}명`, "c")}</td>
+      <td colspan="2">${wrap(attLine(generals.map((m) => m.name)))}</td>
     </tr>
     ${dailyFeeRow}
     ${cashStr ? `<tr><th class="pv-lbl">${wrap("찬조")}</th><td colspan="3">${wrap(cashStr)}</td></tr>` : ""}
@@ -237,6 +238,7 @@ export const PREVIEW_CSS = `
 #preview-target .pv-sublbl { font-weight:500; color:#4b5563; }
 #preview-target .pv-att { text-align:center; }
 #preview-target .pv-cnt { white-space:nowrap; width:1%; }
+#preview-target .pv-cnt-inline { color:#6b7280; font-size:11px; white-space:nowrap; }
 #preview-target .pv-sub { font-weight:400; font-size:11px; color:#6b7280; }
 #preview-target .pv-prepaid { color:#D97706; font-size:11px; margin-left:4px; }
 #preview-target .pv-two { display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; }
