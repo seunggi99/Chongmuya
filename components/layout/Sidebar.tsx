@@ -10,7 +10,7 @@ export default function Sidebar() {
   const active = activeHref(pathname);
 
   return (
-    <aside className="hidden md:flex md:w-60 md:flex-col md:shrink-0 border-r border-gray-100 bg-white">
+    <aside className="hidden md:flex md:w-72 md:flex-col md:shrink-0 border-r border-gray-100 bg-white">
       <div className="sticky top-0 flex h-screen flex-col">
         {/* 워드마크 */}
         <div className="px-5 py-6">
@@ -18,8 +18,8 @@ export default function Sidebar() {
             <Image
               src="/logo/wordmark.svg"
               alt="총무야"
-              width={188}
-              height={45}
+              width={230}
+              height={55}
               priority
               unoptimized
             />
