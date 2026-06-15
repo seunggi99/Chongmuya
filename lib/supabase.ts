@@ -12,7 +12,8 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 function assertEnv(value: string | undefined, name: string): string {
   if (!value) {
@@ -27,7 +28,7 @@ function assertEnv(value: string | undefined, name: string): string {
 export function supabaseBrowser() {
   return createBrowserClient(
     assertEnv(SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL"),
-    assertEnv(SUPABASE_ANON_KEY, "NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    assertEnv(SUPABASE_PUBLISHABLE_KEY, "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
   );
 }
 
@@ -36,7 +37,7 @@ export async function supabaseServer() {
   const cookieStore = await cookies();
   return createServerClient(
     assertEnv(SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL"),
-    assertEnv(SUPABASE_ANON_KEY, "NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    assertEnv(SUPABASE_PUBLISHABLE_KEY, "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
     {
       cookies: {
         getAll() {

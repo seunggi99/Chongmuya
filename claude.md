@@ -374,7 +374,7 @@ Step 6 확인·출력  BalanceChain, 이월금 자동(수동보정), 저장→�
 ## 환경변수
 ```
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
