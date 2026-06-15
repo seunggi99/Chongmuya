@@ -99,7 +99,7 @@ const STEPS = [
   { id: 2, label: "참석자" },
   { id: 3, label: "수입" },
   { id: 4, label: "지출" },
-  { id: 5, label: "교차·연회비" },
+  { id: 5, label: "선입금·선지급" },
   { id: 6, label: "확인" },
 ] as const;
 

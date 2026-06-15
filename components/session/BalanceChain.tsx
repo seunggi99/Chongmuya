@@ -15,9 +15,9 @@ export default function BalanceChain({ summary }: { summary: BalanceSummary }) {
       <Row label="당일 지출" value={summary.dailyExpense} tone="expense" minus />
       <Divider />
       <Row label="당일 잔액" value={summary.dailyBalance} tone="plain" strong />
-      <Row label="교차 수입 (선입금)" value={summary.crossIncome} tone="cross" />
+      <Row label="선입금 (다른 회차)" value={summary.crossIncome} tone="cross" />
       <Row
-        label="교차 지출 (선지급)"
+        label="선지급 (다른 회차)"
         value={summary.crossExpense}
         tone="cross"
         minus

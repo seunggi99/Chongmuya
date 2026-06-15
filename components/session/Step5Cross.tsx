@@ -49,17 +49,17 @@ export default function Step5Cross({
       <div>
         <h2 className="flex items-center gap-1.5 text-lg font-bold">
           <ArrowRightLeft className="h-4 w-4 text-cross" />
-          교차 항목
+          선입금 · 선지급
         </h2>
         <p className="mt-1 text-sm text-gray-500">
-          이번 회차 통장에서 오갔지만 <b>다른 회차에 귀속</b>되는 선입금·선지급을
-          입력합니다. 결산은 귀속회차의 원래 분류로 집계됩니다. (연회비는
-          Step3에서 입력)
+          이번 회차 통장에서 오갔지만 <b>다른(주로 미래) 회차</b>의 돈입니다.
+          미래 회차 회비를 미리 받았으면 <b>선입금</b>, 비용을 미리 냈으면{" "}
+          <b>선지급</b>. 결산은 대상 회차의 원래 분류로 집계됩니다.
         </p>
       </div>
 
       <CrossSection
-        title="교차 수입 (선입금)"
+        title="선입금 (미래 회차 회비 미리 받음)"
         kind="income"
         entries={crossOf("income")}
         sessions={pickerSessions}
@@ -76,7 +76,7 @@ export default function Step5Cross({
       />
 
       <CrossSection
-        title="교차 지출 (선지급)"
+        title="선지급 (미래 회차 비용 미리 냄)"
         kind="expense"
         entries={crossOf("expense")}
         sessions={pickerSessions}
@@ -141,7 +141,7 @@ function CrossSection({
 
       {entries.length === 0 ? (
         <p className="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-400">
-          교차 항목이 없습니다.
+          내역이 없습니다.
         </p>
       ) : (
         <div className="space-y-3">
@@ -150,10 +150,10 @@ function CrossSection({
               key={entry.uid}
               className="space-y-3 rounded-xl border border-cross/30 bg-amber-50/30 p-3"
             >
-              {/* 귀속회차 */}
+              {/* 대상 회차 (이 돈이 실제로 속하는 회차) */}
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-cross">
-                  귀속회차
+                  대상 회차
                 </span>
                 <select
                   value={entry.cross_session_id ?? ""}
@@ -165,7 +165,7 @@ function CrossSection({
                   }
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary"
                 >
-                  <option value="">귀속회차 선택</option>
+                  <option value="">대상 회차 선택</option>
                   {sessions.map((s) => (
                     <option key={s.id} value={s.id}>
                       {sessionPickerLabel(s)}
@@ -174,7 +174,7 @@ function CrossSection({
                 </select>
                 {sessions.length === 0 && (
                   <span className="mt-1 block text-xs text-gray-400">
-                    선택 가능한 기존 회차가 없습니다. 귀속회차가 먼저 저장되어
+                    선택 가능한 회차가 없습니다. 대상 회차(행사)가 먼저 등록되어
                     있어야 합니다.
                   </span>
                 )}

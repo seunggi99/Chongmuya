@@ -47,10 +47,10 @@ function entryRow(e: PreviewEntryView): string {
     ? ` <span class="pv-paren">(${esc(paren)})</span>`
     : "";
 
-  // 교차항목: [선납/선지급] · 원래 분류명 (→귀속회차). 분류명 자체는 그대로 유지.
+  // 교차항목: [선입금/선지급] · 원래 분류명 (→대상회차). 분류명 자체는 그대로 유지.
   let label: string;
   if (e.crossSessionLabel) {
-    const kindLabel = e.kind === "income" ? "선납" : "선지급";
+    const kindLabel = e.kind === "income" ? "선입금" : "선지급";
     label = `<span class="pv-cross">${kindLabel} ·</span> ${esc(e.categoryName)} <span class="pv-cross">(→${esc(e.crossSessionLabel)})</span>`;
   } else {
     label = esc(e.categoryName);
@@ -84,8 +84,8 @@ function balanceRows(b: SessionDetailView["balance"]): string {
     row("당일 수입", b.dailyIncome),
     row("당일 지출", b.dailyExpense),
     row("당일 잔액", b.dailyBalance, "pv-mid"),
-    hasCross ? row("교차 수입 (선입금)", b.crossIncome) : "",
-    hasCross ? row("교차 지출 (선지급)", b.crossExpense) : "",
+    hasCross ? row("선입금 (다른 회차)", b.crossIncome) : "",
+    hasCross ? row("선지급 (다른 회차)", b.crossExpense) : "",
     row("이월금", b.carryOver),
     row("총 잔액", b.total, "pv-total"),
   ].join("");
@@ -118,7 +118,7 @@ function topTable(data: SessionDetailView): string {
     const formula =
       prepaidCount === 0
         ? `${formatKRW(fee)} × ${attendeeCount}명 = ${formatKRW(fullDaily)}`
-        : `${formatKRW(fee)} × (${attendeeCount} - ${prepaidCount})명 = ${formatKRW(actualAmount)} <span class="pv-prepaid">(${esc(prepaid.join("·"))} 선납)</span>`;
+        : `${formatKRW(fee)} × (${attendeeCount} - ${prepaidCount})명 = ${formatKRW(actualAmount)} <span class="pv-prepaid">(${esc(prepaid.join("·"))} 선입금)</span>`;
     dailyFeeRow = `<tr>
       <th class="pv-lbl" colspan="2">${wrap(`당일회비<br><span class="pv-sub">1인 ${formatWon(fee)}</span>`, "c")}</th>
       <td class="pv-amt">${wrap(formatWon(fullDaily), "r")}</td>
