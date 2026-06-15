@@ -199,8 +199,11 @@ export const PREVIEW_CSS = `
 #preview-target .pv { padding:24px; max-width:780px; margin:0 auto; }
 #preview-target .pv-title { text-align:center; font-size:22px; font-weight:700; margin-bottom:16px; letter-spacing:-0.02em; }
 #preview-target table { width:100%; border-collapse:collapse; margin-bottom:12px; }
-/* JPG(html2canvas) 수직 쏠림 방지: 셀 내용을 flex 로 수직 가운데 */
-#preview-target .pv-c { display:flex; align-items:center; min-height:1.4em; line-height:1.3; }
+/* JPG(html2canvas) 수직 쏠림 방지:
+   line-height:1 로 줄상자 여백(leading)을 없애 글리프가 줄상자 하단에 몰리지 않게 하고,
+   min-height + flex align-items:center 로 셀 높이를 확보해 가운데 정렬한다.
+   (여백을 line-height 가 아닌 min-height 로 줘서 글자 위치가 흔들리지 않음) */
+#preview-target .pv-c { display:flex; align-items:center; min-height:1.5em; line-height:1; }
 #preview-target .pv-c-l { justify-content:flex-start; }
 #preview-target .pv-c-r { justify-content:flex-end; }
 #preview-target .pv-c-c { justify-content:center; }
