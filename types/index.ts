@@ -232,6 +232,8 @@ export interface SessionDetailView {
   entries: PreviewEntryView[];
   goods: PreviewGoodsView[];
   balance: BalanceSummary;
+  /** 이 회차로 들어온 선입금(daily_fee) 선납 회원명 — 당일회비 계산식 표시용 */
+  prepaidDailyFeeNames: string[];
 }
 
 // ─── 일지 작성 폼 draft (클라이언트 상태) ────────────────────

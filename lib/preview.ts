@@ -2,15 +2,13 @@
  * 일지 미리보기/출력 단일 소스.
  *  - renderPreviewBody(data): 엑셀 양식을 재현한 HTML 문자열(시맨틱 클래스)
  *  - PREVIEW_CSS: 위 HTML 용 스타일 (#preview-target 스코프)
- * 화면(SessionPreview, JPG html2canvas)과 PDF(puppeteer)가 동일 마크업을 공유한다.
+ * 화면(SessionPreview), PDF·JPG(둘 다 puppeteer 실제 크롬 렌더)가 동일 마크업을 공유.
  * (server-only 아님 — 클라이언트/서버 양쪽에서 사용)
  *
- * ※ JPG(html2canvas)는 vertical-align:middle 을 제대로 못 읽어 글자가 셀 하단으로
- *   쏠린다. 그래서 모든 셀 내용을 flex 래퍼(.pv-c: display:flex; align-items:center)
- *   로 감싸 수직 중앙을 강제한다. 가로 정렬은 pv-c-l/r/c 로 제어.
+ * 셀 내용은 flex 래퍼(.pv-c)로 감싸 수직 가운데 정렬한다(내부 span 으로 멀티라인 허용).
  */
 import { SESSION_TYPE_LABEL } from "@/types";
-import { formatDateRange, formatWon } from "@/lib/format";
+import { formatDateRange, formatKRW, formatWon } from "@/lib/format";
 import type { PreviewEntryView, SessionDetailView } from "@/types";
 
 /** HTML 이스케이프 (DB 값이 마크업을 깨지 않도록) */
@@ -22,9 +20,9 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** 셀 내용 flex 래퍼 — align: l(왼쪽)/r(오른쪽)/c(가운데) */
+/** 셀 내용 flex 래퍼 — align: l(왼쪽)/r(오른쪽)/c(가운데). 내부 span 으로 멀티라인 지원 */
 function wrap(html: string, align: "l" | "r" | "c" = "l"): string {
-  return `<div class="pv-c pv-c-${align}">${html}</div>`;
+  return `<div class="pv-c pv-c-${align}"><span>${html}</span></div>`;
 }
 
 const sum = (entries: PreviewEntryView[]) =>
@@ -33,11 +31,10 @@ const sum = (entries: PreviewEntryView[]) =>
 /**
  * 분류 옆 괄호 표기.
  *  - 회원연동 분류(당일회비/찬조/연회비)는 상세=회원명단이므로 괄호 생략
- *    (참석자/찬조는 상단 명단에서 확인, 줄이 너무 길어짐 방지)
  *  - 일반 분류는 상세항목 라벨(식당명 등) 유지
  */
 function parenText(e: PreviewEntryView): string {
-  if (e.special) return ""; // daily_fee | donation | annual_dues
+  if (e.special) return "";
   return e.details
     .map((d) => d.label)
     .filter(Boolean)
@@ -87,25 +84,42 @@ function balanceRows(b: SessionDetailView["balance"]): string {
   ].join("");
 }
 
-export function renderPreviewBody(data: SessionDetailView): string {
-  const { session: s, attendees, entries, goods, balance } = data;
-
-  const title = `제${s.number}차 ${SESSION_TYPE_LABEL[s.type]}`;
+/** 상단 표 — 장소/일자 · 참석자 · 당일회비 · 찬조 · 물품찬조 (원본 엑셀 양식) */
+function topTable(data: SessionDetailView): string {
+  const { session: s, attendees, goods } = data;
   const dateStr = formatDateRange(s.date_start, s.date_end);
-  // formatWon 이 이미 "원"을 붙이므로 추가로 붙이지 않는다
-  const feeStr =
-    s.fee_per_person > 0 ? `1인 ${formatWon(s.fee_per_person)}` : "—";
 
   const members = attendees.filter((a) => a.type === "member");
   const generals = attendees.filter((a) => a.type === "general");
   const nameList = (names: string[]) =>
     names.length > 0 ? esc(names.join(" · ")) : "—";
 
-  const income = entries.filter((e) => e.kind === "income");
-  const expense = entries.filter((e) => e.kind === "expense");
+  const attendeeCount = attendees.length;
+  const fee = s.fee_per_person;
+  const prepaid = data.prepaidDailyFeeNames;
+  const prepaidCount = prepaid.length;
 
-  // 찬조: 현금(분류 special=donation) + 물품
-  const cashDonations = income.filter((e) => e.special === "donation");
+  // 당일회비 행 (단가>0일 때만): 합계 = 단가×참가, 계산식 = 실제 입금액(선납 차감)
+  let dailyFeeRow = "";
+  if (fee > 0 && attendeeCount > 0) {
+    const fullDaily = fee * attendeeCount;
+    const actualCount = Math.max(0, attendeeCount - prepaidCount);
+    const actualAmount = fee * actualCount;
+    const formula =
+      prepaidCount === 0
+        ? `${formatKRW(fee)} × ${attendeeCount}명 = ${formatKRW(fullDaily)}`
+        : `${formatKRW(fee)} × (${attendeeCount} - ${prepaidCount})명 = ${formatKRW(actualAmount)} <span class="pv-prepaid">(${esc(prepaid.join("·"))} 선납)</span>`;
+    dailyFeeRow = `<tr>
+      <th class="pv-lbl">${wrap(`당일회비<br><span class="pv-sub">1인 ${formatWon(fee)}</span>`, "c")}</th>
+      <td class="pv-amt">${wrap(formatWon(fullDaily), "r")}</td>
+      <td colspan="2">${wrap(formula)}</td>
+    </tr>`;
+  }
+
+  // 찬조: 현금(special=donation) + 물품
+  const cashDonations = data.entries.filter(
+    (e) => e.kind === "income" && e.special === "donation",
+  );
   const cashStr = cashDonations
     .map(
       (e) =>
@@ -116,6 +130,37 @@ export function renderPreviewBody(data: SessionDetailView): string {
     .map((g) => `${g.donorName ? esc(g.donorName) + " — " : ""}${esc(g.item)}`)
     .join(" / ");
 
+  return `<table class="pv-top">
+    <tr>
+      <th class="pv-lbl">${wrap("장소")}</th>
+      <td>${wrap(esc(s.location))}</td>
+      <th class="pv-lbl">${wrap("일자")}</th>
+      <td class="pv-cnt">${wrap(esc(dateStr))}</td>
+    </tr>
+    <tr>
+      <th class="pv-lbl pv-att" rowspan="2">${wrap(`참석자<br><span class="pv-sub">총 ${attendeeCount}명</span>`, "c")}</th>
+      <th class="pv-lbl pv-sublbl">${wrap("회원", "c")}</th>
+      <td>${wrap(nameList(members.map((m) => m.name)))}</td>
+      <td class="pv-cnt">${wrap(`${members.length}명`, "c")}</td>
+    </tr>
+    <tr>
+      <th class="pv-lbl pv-sublbl">${wrap("일반회원", "c")}</th>
+      <td>${wrap(nameList(generals.map((m) => m.name)))}</td>
+      <td class="pv-cnt">${wrap(`${generals.length}명`, "c")}</td>
+    </tr>
+    ${dailyFeeRow}
+    ${cashStr ? `<tr><th class="pv-lbl">${wrap("찬조")}</th><td colspan="3">${wrap(cashStr)}</td></tr>` : ""}
+    ${goodsStr ? `<tr><th class="pv-lbl">${wrap("물품 찬조")}</th><td colspan="3">${wrap(goodsStr)}</td></tr>` : ""}
+  </table>`;
+}
+
+export function renderPreviewBody(data: SessionDetailView): string {
+  const { session: s, entries, balance } = data;
+
+  const title = `제${s.number}차 ${SESSION_TYPE_LABEL[s.type]}`;
+  const income = entries.filter((e) => e.kind === "income");
+  const expense = entries.filter((e) => e.kind === "expense");
+
   // 영수증 첨부
   const receipts = entries.flatMap((e) =>
     e.details
@@ -125,14 +170,6 @@ export function renderPreviewBody(data: SessionDetailView): string {
         url: d.receipt_url as string,
       })),
   );
-
-  const donationBlock =
-    cashStr || goodsStr
-      ? `<table class="pv-info">
-          ${cashStr ? `<tr><th>${wrap("현금 찬조")}</th><td>${wrap(cashStr)}</td></tr>` : ""}
-          ${goodsStr ? `<tr><th>${wrap("물품 찬조")}</th><td>${wrap(goodsStr)}</td></tr>` : ""}
-        </table>`
-      : "";
 
   const receiptBlock =
     receipts.length > 0
@@ -152,21 +189,7 @@ export function renderPreviewBody(data: SessionDetailView): string {
   return `<div class="pv">
     <div class="pv-title">${esc(title)}</div>
 
-    <table class="pv-info">
-      <tr>
-        <th>${wrap("장소")}</th><td>${wrap(esc(s.location))}</td>
-        <th>${wrap("일자")}</th><td>${wrap(esc(dateStr))}</td>
-        <th>${wrap("당일회비")}</th><td>${wrap(esc(feeStr))}</td>
-      </tr>
-    </table>
-
-    <table class="pv-info">
-      <tr><th>${wrap(`회원 (${members.length})`)}</th><td>${wrap(nameList(members.map((m) => m.name)))}</td></tr>
-      <tr><th>${wrap(`일반회원 (${generals.length})`)}</th><td>${wrap(nameList(generals.map((m) => m.name)))}</td></tr>
-      <tr><th>${wrap("참석 합계")}</th><td>${wrap(`총 ${attendees.length}명`)}</td></tr>
-    </table>
-
-    ${donationBlock}
+    ${topTable(data)}
 
     <div class="pv-two">
       ${colTable("수입", income, "pv-income")}
@@ -198,16 +221,24 @@ export const PREVIEW_CSS = `
 #preview-target .pv { padding:24px; max-width:780px; margin:0 auto; }
 #preview-target .pv-title { text-align:center; font-size:22px; font-weight:700; margin-bottom:16px; letter-spacing:-0.02em; }
 #preview-target table { width:100%; border-collapse:collapse; margin-bottom:12px; }
-/* JPG(html2canvas) 수직 쏠림 방지:
-   line-height:1 로 줄상자 여백(leading)을 없애 글리프가 줄상자 하단에 몰리지 않게 하고,
-   min-height + flex align-items:center 로 셀 높이를 확보해 가운데 정렬한다.
-   (여백을 line-height 가 아닌 min-height 로 줘서 글자 위치가 흔들리지 않음) */
-#preview-target .pv-c { display:flex; align-items:center; min-height:1.5em; line-height:1; }
+#preview-target td, #preview-target th { vertical-align:middle; }
+/* 셀 내용 수직 가운데(내부 span 으로 멀티라인 허용) */
+#preview-target .pv-c { display:flex; align-items:center; min-height:1.6em; }
+#preview-target .pv-c > span { display:inline-block; max-width:100%; line-height:1.35; }
 #preview-target .pv-c-l { justify-content:flex-start; }
+#preview-target .pv-c-l > span { text-align:left; }
 #preview-target .pv-c-r { justify-content:flex-end; }
+#preview-target .pv-c-r > span { text-align:right; }
 #preview-target .pv-c-c { justify-content:center; }
-#preview-target .pv-info th { background:#f9fafb; text-align:left; font-weight:600; color:#374151; white-space:nowrap; width:1%; padding:6px 10px; border:1px solid #e5e7eb; }
-#preview-target .pv-info td { padding:6px 10px; border:1px solid #e5e7eb; }
+#preview-target .pv-c-c > span { text-align:center; }
+/* 상단 표 */
+#preview-target .pv-top td, #preview-target .pv-top th { border:1px solid #e5e7eb; padding:5px 10px; }
+#preview-target .pv-lbl { background:#f1f5f0; color:#374151; font-weight:600; white-space:nowrap; width:1%; }
+#preview-target .pv-sublbl { font-weight:500; color:#4b5563; }
+#preview-target .pv-att { text-align:center; }
+#preview-target .pv-cnt { white-space:nowrap; width:1%; }
+#preview-target .pv-sub { font-weight:400; font-size:11px; color:#6b7280; }
+#preview-target .pv-prepaid { color:#D97706; font-size:11px; margin-left:4px; }
 #preview-target .pv-two { display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; }
 #preview-target .pv-col { flex:1; min-width:0; }
 #preview-target .pv-col-h { font-weight:700; padding:6px 10px; border:1px solid #e5e7eb; border-bottom:none; }
@@ -224,7 +255,7 @@ export const PREVIEW_CSS = `
 #preview-target .pv-balance td:first-child { color:#374151; }
 #preview-target .pv-balance .pv-mid td { font-weight:600; background:#f9fafb; }
 #preview-target .pv-balance .pv-total td { font-weight:700; font-size:15px; color:#2563EB; background:#eff6ff; }
-/* 결제란: 원본 양식대로 우측 하단 작은 박스 (3열x2행, '결제' 세로병합) */
+/* 결제란: 우측 하단 작은 박스 (3열x2행, '결제' 세로병합) */
 #preview-target .pv-sign { width:34%; margin:6px 0 4px auto; border-collapse:collapse; }
 #preview-target .pv-sign td { border:1px solid #d1d5db; padding:5px 8px; font-size:12px; }
 #preview-target .pv-sign-label { background:#f9fafb; font-weight:600; color:#374151; width:26%; }

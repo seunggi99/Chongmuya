@@ -263,7 +263,40 @@ export async function getSessionDetail(
     session.carry_over,
   );
 
-  return { session, attendees, entries, goods, balance };
+  // 선납: 다른 회차에서 이 회차로 들어온 daily_fee 선입금 entry 의 회원 = 선납자
+  let prepaidDailyFeeNames: string[] = [];
+  const { data: crossInRows, error: ciErr } = await sb
+    .from("entries")
+    .select("id, category_id")
+    .eq("cross_session_id", id)
+    .eq("kind", "income");
+  if (ciErr) throw ciErr;
+  const prepaidEntryIds = ((crossInRows ?? []) as {
+    id: string;
+    category_id: string | null;
+  }[])
+    .filter((e) => {
+      const c = e.category_id ? catMap.get(e.category_id) : null;
+      return c?.special === "daily_fee";
+    })
+    .map((e) => e.id);
+  if (prepaidEntryIds.length > 0) {
+    const { data: pm, error: pmErr } = await sb
+      .from("entry_members")
+      .select("member_id")
+      .in("entry_id", prepaidEntryIds);
+    if (pmErr) throw pmErr;
+    const names = Array.from(
+      new Set(
+        ((pm ?? []) as { member_id: string }[])
+          .map((r) => memberName.get(r.member_id) ?? "")
+          .filter(Boolean),
+      ),
+    );
+    prepaidDailyFeeNames = names.sort((a, b) => a.localeCompare(b, "ko-KR"));
+  }
+
+  return { session, attendees, entries, goods, balance, prepaidDailyFeeNames };
 }
 
 /** 전체 회차 목록 (number 내림차순) — 교차 귀속회차 선택 등에 사용 */
