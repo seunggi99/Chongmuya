@@ -12,6 +12,7 @@ import type {
   PreviewEntryView,
   Session,
   SessionDetailView,
+  SessionSummary,
   SessionType,
 } from "@/types";
 
@@ -299,6 +300,64 @@ export async function getSessionDetail(
   }
 
   return { session, attendees, entries, goods, balance, prepaidDailyFeeNames };
+}
+
+/**
+ * 회차 목록 카드용 요약 — 전체 세션(시간순 최신 위) + 참석 인원 + 총잔액.
+ * 총잔액 = computeBalance(entries, carry_over).total (carry_over 는 저장 시 연쇄 갱신됨)
+ */
+export async function getSessionSummaries(): Promise<SessionSummary[]> {
+  if (!isSupabaseConfigured()) return [];
+  const sb = supabaseAdmin();
+  const { data: sessions, error } = await sb
+    .from("sessions")
+    .select("*")
+    .order("date_start", { ascending: false });
+  if (error) throw error;
+  const list = (sessions ?? []) as Session[];
+  if (list.length === 0) return [];
+  const ids = list.map((s) => s.id);
+
+  const [entryRes, attRes] = await Promise.all([
+    sb
+      .from("entries")
+      .select("session_id, kind, amount, cross_session_id")
+      .in("session_id", ids),
+    sb.from("session_attendees").select("session_id").in("session_id", ids),
+  ]);
+  if (entryRes.error) throw entryRes.error;
+  if (attRes.error) throw attRes.error;
+
+  const entriesBy = new Map<
+    string,
+    { kind: "income" | "expense"; amount: number; cross_session_id: string | null }[]
+  >();
+  for (const en of (entryRes.data ?? []) as {
+    session_id: string;
+    kind: "income" | "expense";
+    amount: number;
+    cross_session_id: string | null;
+  }[]) {
+    const arr = entriesBy.get(en.session_id) ?? [];
+    arr.push({
+      kind: en.kind,
+      amount: en.amount,
+      cross_session_id: en.cross_session_id,
+    });
+    entriesBy.set(en.session_id, arr);
+  }
+
+  const attBy = new Map<string, number>();
+  for (const a of (attRes.data ?? []) as { session_id: string }[]) {
+    attBy.set(a.session_id, (attBy.get(a.session_id) ?? 0) + 1);
+  }
+
+  return list.map((session) => ({
+    session,
+    attendeeCount: attBy.get(session.id) ?? 0,
+    total: computeBalance(entriesBy.get(session.id) ?? [], session.carry_over)
+      .total,
+  }));
 }
 
 /** 전체 회차 목록 (시간순 내림차순) — 교차 귀속회차 선택 등에 사용 */

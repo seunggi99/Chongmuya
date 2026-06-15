@@ -196,6 +196,13 @@ export interface SessionWithRelations extends Session {
   goods_donations?: GoodsDonation[];
 }
 
+// ─── 회차 목록 카드용 요약 ──────────────────────────────────
+export interface SessionSummary {
+  session: Session;
+  attendeeCount: number;
+  total: number; // 총잔액 (completed 만 의미 있음)
+}
+
 // ─── 일지 상세/미리보기 뷰 (조회 + 계산 결과) ───────────────
 export interface PreviewDetailView {
   label: string;
