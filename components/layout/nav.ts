@@ -1,5 +1,6 @@
 import {
   Home,
+  CalendarDays,
   ScrollText,
   FilePlus2,
   Calculator,
@@ -19,7 +20,8 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "홈", icon: Home, mobile: true },
-  { href: "/sessions", label: "회차목록", icon: ScrollText, mobile: true },
+  { href: "/events", label: "행사 일정", icon: CalendarDays, mobile: true },
+  { href: "/sessions", label: "회차목록", icon: ScrollText },
   { href: "/sessions/new", label: "새 일지", icon: FilePlus2, mobile: true },
   { href: "/settlement", label: "연간결산", icon: Calculator, mobile: true },
   { href: "/members", label: "회원관리", icon: Users },

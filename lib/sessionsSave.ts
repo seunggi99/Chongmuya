@@ -227,7 +227,8 @@ export async function deleteSessionById(id: string): Promise<void> {
 async function recalcCarryOverChainInDb(sb: SupabaseAdmin): Promise<void> {
   const { data: sessions, error } = await sb
     .from("sessions")
-    .select("id, number, carry_over, is_manual_carry_over");
+    .select("id, number, carry_over, is_manual_carry_over")
+    .eq("status", "completed");
   if (error) throw error;
   const list = (sessions ?? []) as SessionChainRow[];
   if (list.length === 0) return;

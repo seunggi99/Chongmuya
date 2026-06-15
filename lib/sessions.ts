@@ -11,22 +11,88 @@ import type {
   PreviewEntryView,
   Session,
   SessionDetailView,
+  SessionType,
 } from "@/types";
 
 /**
  * 다음 회차번호 제안 = 현재 최대 number + 1.
- * 회차가 하나도 없으면 1.
+ * 번호 없는(미정) 행사는 제외. 회차가 하나도 없으면 1.
  */
 export async function getNextSessionNumber(): Promise<number> {
   if (!isSupabaseConfigured()) return 1;
   const { data, error } = await supabaseAdmin()
     .from("sessions")
     .select("number")
+    .not("number", "is", null)
     .order("number", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
   return data ? (data.number as number) + 1 : 1;
+}
+
+/**
+ * 행사 등록 = status='planned' 인 빈 session 생성 (수입/지출 없음).
+ * 일지는 나중에 이 session 에 채운다(status='completed'로 전환).
+ */
+export async function createEventSession(input: {
+  name: string | null;
+  type: SessionType;
+  location: string;
+  date_start: string;
+  date_end: string | null;
+  number: number | null;
+}): Promise<Session> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase 가 연결되지 않았습니다.");
+  }
+  const location = input.location.trim();
+  if (!location) throw new Error("장소를 입력하세요.");
+  if (!input.date_start) throw new Error("일자를 입력하세요.");
+
+  const { data, error } = await supabaseAdmin()
+    .from("sessions")
+    .insert({
+      name: input.name?.trim() || null,
+      type: input.type,
+      location,
+      date_start: input.date_start,
+      date_end: input.date_end || null,
+      number: input.number ?? null,
+      status: "planned",
+    })
+    .select("*")
+    .single();
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error(`이미 사용 중인 회차번호입니다 (${input.number}차).`);
+    }
+    throw error;
+  }
+  return data as Session;
+}
+
+/** 달력용 — 모든 회차(행사 planned + 일지 completed), 시작일 오름차순 */
+export async function getCalendarSessions(): Promise<Session[]> {
+  if (!isSupabaseConfigured()) return [];
+  const { data, error } = await supabaseAdmin()
+    .from("sessions")
+    .select("*")
+    .order("date_start", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Session[];
+}
+
+/** 아직 일지 미작성(planned) 행사 목록 — 시작일 오름차순 */
+export async function getPlannedSessions(): Promise<Session[]> {
+  if (!isSupabaseConfigured()) return [];
+  const { data, error } = await supabaseAdmin()
+    .from("sessions")
+    .select("*")
+    .eq("status", "planned")
+    .order("date_start", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Session[];
 }
 
 /**
@@ -203,12 +269,13 @@ export async function getSessionList(): Promise<Session[]> {
   return (data ?? []) as Session[];
 }
 
-/** 최근 회차 N개 (number 내림차순) */
+/** 최근 회차 N개 (작성 완료 일지만, number 내림차순) */
 export async function getRecentSessions(limit = 5): Promise<Session[]> {
   if (!isSupabaseConfigured()) return [];
   const { data, error } = await supabaseAdmin()
     .from("sessions")
     .select("*")
+    .eq("status", "completed")
     .order("number", { ascending: false })
     .limit(limit);
   if (error) throw error;
@@ -230,6 +297,7 @@ async function getSessionsInMonth(
   const { data: sessions, error } = await sb
     .from("sessions")
     .select("*")
+    .eq("status", "completed")
     .gte("date_start", from)
     .lt("date_start", to);
   if (error) throw error;
@@ -288,6 +356,7 @@ export async function getCurrentBalance(): Promise<number> {
   const { data: latest, error } = await sb
     .from("sessions")
     .select("*")
+    .eq("status", "completed")
     .order("number", { ascending: false })
     .limit(1)
     .maybeSingle();

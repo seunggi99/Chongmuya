@@ -146,10 +146,13 @@ sort_order  integer default 0
   참조하는 entry가 0건일 때만 실제 삭제 허용.
   (삭제 시도 시 사용 중이면 "이 분류를 쓰는 일지 N건이 있어 비활성 처리됩니다" 안내)
 
-### sessions (회차)
+### sessions (회차 / 행사)
 ```sql
 id          uuid pk
-number      integer not null unique
+number      integer unique          -- nullable: 행사 등록 시 미정 가능, 일지 작성 시 확정
+name        text                    -- 행사명(없으면 유형 라벨로 표시)
+status      text not null default 'completed' check (status in ('planned','completed'))
+                                     -- planned=행사만 등록(기본정보만), completed=일지 작성 완료
 type        text not null   -- hike|general_meeting|regular_meeting|sansanje|travel|flash
 location    text not null
 date_start  date not null
@@ -163,6 +166,15 @@ is_manual_carry_over boolean default false
 created_at  timestamptz default now()
 updated_at  timestamptz default now()
 ```
+- **행사 = sessions 의 초기 상태(planned).** 별도 행사 테이블을 두지 않는다.
+  행사 등록 = 기본정보만 있는 빈 session(status=planned) 생성 → 미래 행사가
+  sessions 에 미리 존재하므로 **cross_session_id 로 선입금/선지급 연결이 가능**.
+  일지 작성 = 그 session 에 수입/지출/참석자를 채우고 status=completed 로 전환.
+- 즉석 행사+일지 동시 작성도 가능(바로 completed 생성).
+- **집계/잔액은 completed 만:** getCurrentBalance·getRecentSessions·월별집계·
+  이월금 연쇄재계산은 status='completed' 만 대상. 다음 회차번호도 number 있는 것만.
+- 달력(/events): planned=예정(회색)·completed=완료(파랑). EventCalendar 는 라이브러리
+  없이 순수 날짜계산으로 month view 렌더.
 
 ### session_attendees (참석자)
 ```sql

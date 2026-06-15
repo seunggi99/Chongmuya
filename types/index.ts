@@ -17,6 +17,9 @@ export type SessionType =
   | "travel" // 여행
   | "flash"; // 번개
 
+/** 행사/일지 상태: planned=행사만 등록, completed=일지 작성 완료 */
+export type SessionStatus = "planned" | "completed";
+
 export const SESSION_TYPE_LABEL: Record<SessionType, string> = {
   hike: "산행",
   general_meeting: "총회",
@@ -51,7 +54,9 @@ export interface Category {
 // ─── sessions ───────────────────────────────────────────────
 export interface Session {
   id: string;
-  number: number;
+  number: number | null; // 행사 등록 시 미정 가능 → 일지 작성 시 확정
+  name: string | null; // 행사명 (없으면 유형 라벨로 대체 표시)
+  status: SessionStatus; // planned | completed
   type: SessionType;
   location: string;
   date_start: string; // date
