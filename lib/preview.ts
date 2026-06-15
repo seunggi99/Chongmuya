@@ -46,10 +46,9 @@ function parenText(e: PreviewEntryView): string {
 
 function entryRow(e: PreviewEntryView): string {
   const paren = parenText(e);
-  const cross =
-    e.crossSessionNumber != null
-      ? `<span class="pv-cross">→${e.crossSessionNumber}차</span>`
-      : "";
+  const cross = e.crossSessionLabel
+    ? `<span class="pv-cross">→${esc(e.crossSessionLabel)}</span>`
+    : "";
   const parenHtml = paren
     ? ` <span class="pv-paren">(${esc(paren)})</span>`
     : "";

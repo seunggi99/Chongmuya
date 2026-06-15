@@ -209,8 +209,8 @@ export interface PreviewEntryView {
   categoryName: string;
   special: CategorySpecial;
   amount: number;
-  /** 교차(선입금/선지급) 귀속회차 번호 — 당일 항목이면 null */
-  crossSessionNumber: number | null;
+  /** 교차(선입금/선지급) 귀속회차 표시 라벨(번호 없으면 행사명·일자) — 당일 항목이면 null */
+  crossSessionLabel: string | null;
   details: PreviewDetailView[];
   /** 회원연동(당일회비/찬조/연회비) 명단 */
   memberNames: string[];
@@ -281,8 +281,11 @@ export interface GoodsDonationDraft {
 
 /** 일지 작성 6단계 폼 전체 상태 */
 export interface SessionDraft {
+  /** 완성 중인 planned 행사 session id (있으면 새로 만들지 않고 그 행을 채워 completed 전환) */
+  eventSessionId: string | null;
   // Step1 기본정보
   number: number;
+  name: string; // 행사명 (선택)
   type: SessionType;
   location: string;
   date_start: string; // YYYY-MM-DD ('' = 미입력)

@@ -58,32 +58,58 @@ export async function createSessionFromDraft(
     throw new Error(issues[0]);
   }
 
-  // 3. 세션 생성
-  const { data: sessionRow, error: se } = await sb
-    .from("sessions")
-    .insert({
-      number: draft.number,
-      type: draft.type,
-      location: draft.location.trim(),
-      date_start: draft.date_start,
-      date_end: draft.isMultiDay ? draft.date_end : null,
-      fee_per_person: Math.round(draft.fee_per_person) || 0,
-      note: draft.note.trim() || null,
-      chairperson: draft.chairperson.trim() || null,
-      treasurer: draft.treasurer.trim() || null,
-      carry_over: Math.round(draft.carry_over) || 0,
-      is_manual_carry_over: draft.is_manual_carry_over,
-    })
-    .select("id")
-    .single();
-  if (se) {
-    // number unique 충돌 등 — 사용자 친화 메시지
-    if (se.code === "23505") {
-      throw new Error(`이미 존재하는 회차번호입니다 (${draft.number}차).`);
+  // 세션 필드 (insert/update 공용)
+  const sessionFields = {
+    number: draft.number,
+    name: draft.name.trim() || null,
+    type: draft.type,
+    location: draft.location.trim(),
+    date_start: draft.date_start,
+    date_end: draft.isMultiDay ? draft.date_end : null,
+    fee_per_person: Math.round(draft.fee_per_person) || 0,
+    note: draft.note.trim() || null,
+    chairperson: draft.chairperson.trim() || null,
+    treasurer: draft.treasurer.trim() || null,
+    carry_over: Math.round(draft.carry_over) || 0,
+    is_manual_carry_over: draft.is_manual_carry_over,
+    status: "completed" as const,
+  };
+
+  // 3. 대상 세션 결정
+  //  - eventSessionId 있으면: 기존 planned 행사를 채운다(자식 정리 후, status 는
+  //    자식 저장 성공 뒤 completed 로 전환 — id 유지로 교차 참조가 안 깨짐)
+  //  - 없으면: 새 completed 세션 생성
+  const isUpdate = Boolean(draft.eventSessionId);
+  let sessionId: string;
+
+  if (isUpdate) {
+    sessionId = draft.eventSessionId as string;
+    const { data: existing, error: exErr } = await sb
+      .from("sessions")
+      .select("id")
+      .eq("id", sessionId)
+      .maybeSingle();
+    if (exErr) throw exErr;
+    if (!existing) throw new Error("선택한 행사를 찾을 수 없습니다.");
+    // 재작성 대비 이 세션의 기존 자식 정리 (교차 참조는 다른 세션이라 보존됨)
+    await sb.from("entries").delete().eq("session_id", sessionId);
+    await sb.from("session_attendees").delete().eq("session_id", sessionId);
+    await sb.from("goods_donations").delete().eq("session_id", sessionId);
+    await sb.from("annual_dues").delete().eq("session_id", sessionId);
+  } else {
+    const { data: sessionRow, error: se } = await sb
+      .from("sessions")
+      .insert(sessionFields)
+      .select("id")
+      .single();
+    if (se) {
+      if (se.code === "23505") {
+        throw new Error(`이미 존재하는 회차번호입니다 (${draft.number}차).`);
+      }
+      throw se;
     }
-    throw se;
+    sessionId = sessionRow.id as string;
   }
-  const sessionId = sessionRow.id as string;
 
   const insertedDueIds: string[] = [];
   try {
@@ -191,6 +217,20 @@ export async function createSessionFromDraft(
       if (error) throw error;
     }
 
+    // planned → completed 전환 (자식 저장 성공 후, id 유지)
+    if (isUpdate) {
+      const { error: ue } = await sb
+        .from("sessions")
+        .update(sessionFields)
+        .eq("id", sessionId);
+      if (ue) {
+        if (ue.code === "23505") {
+          throw new Error(`이미 존재하는 회차번호입니다 (${draft.number}차).`);
+        }
+        throw ue;
+      }
+    }
+
     // 8. 이월금 연쇄 재계산
     await recalcCarryOverChainInDb(sb);
 
@@ -200,7 +240,14 @@ export async function createSessionFromDraft(
     if (insertedDueIds.length > 0) {
       await sb.from("annual_dues").delete().in("id", insertedDueIds);
     }
-    await sb.from("sessions").delete().eq("id", sessionId);
+    if (isUpdate) {
+      // 새로 넣은 자식만 제거 — planned 세션 행은 보존(교차 참조 유지)
+      await sb.from("entries").delete().eq("session_id", sessionId);
+      await sb.from("session_attendees").delete().eq("session_id", sessionId);
+      await sb.from("goods_donations").delete().eq("session_id", sessionId);
+    } else {
+      await sb.from("sessions").delete().eq("id", sessionId);
+    }
     throw err;
   }
 }

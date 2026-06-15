@@ -1,10 +1,11 @@
-import SessionForm from "@/components/session/SessionForm";
+import NewSessionFlow from "@/components/session/NewSessionFlow";
 import SetupNotice from "@/components/common/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/env";
 import {
   getNextSessionNumber,
   getCurrentBalance,
   getSessionList,
+  getPlannedSessions,
 } from "@/lib/sessions";
 import { getMembersWithDues } from "@/lib/members";
 import { currentYearLabel } from "@/lib/dues";
@@ -19,8 +20,13 @@ function todayKST(): string {
   return kst.toISOString().slice(0, 10);
 }
 
-export default async function NewSessionPage() {
+export default async function NewSessionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ event?: string }>;
+}) {
   const configured = isSupabaseConfigured();
+  const { event: eventId } = await searchParams;
 
   let nextNumber = 1;
   let chairperson = "";
@@ -29,6 +35,7 @@ export default async function NewSessionPage() {
   let members: Member[] = [];
   let categories: Category[] = [];
   let sessions: Session[] = [];
+  let planned: Session[] = [];
   let paidDuesMemberIds: string[] = [];
   let defaultDueAmount = 100_000;
   let loadError: string | null = null;
@@ -36,15 +43,23 @@ export default async function NewSessionPage() {
   if (configured) {
     try {
       const yearLabel = await currentYearLabel();
-      const [number, settings, balance, duesRes, categoryList, sessionList] =
-        await Promise.all([
-          getNextSessionNumber(),
-          getClubSettings(),
-          getCurrentBalance(),
-          getMembersWithDues(yearLabel),
-          getCategories({ includeInactive: false }),
-          getSessionList(),
-        ]);
+      const [
+        number,
+        settings,
+        balance,
+        duesRes,
+        categoryList,
+        sessionList,
+        plannedList,
+      ] = await Promise.all([
+        getNextSessionNumber(),
+        getClubSettings(),
+        getCurrentBalance(),
+        getMembersWithDues(yearLabel),
+        getCategories({ includeInactive: false }),
+        getSessionList(),
+        getPlannedSessions(),
+      ]);
       nextNumber = number;
       chairperson = settings.default_chairperson ?? "";
       treasurer = settings.default_treasurer ?? "";
@@ -54,6 +69,7 @@ export default async function NewSessionPage() {
       paidDuesMemberIds = duesRes.paidMemberIds;
       categories = categoryList;
       sessions = sessionList;
+      planned = plannedList;
     } catch (e) {
       loadError =
         e instanceof Error
@@ -67,7 +83,7 @@ export default async function NewSessionPage() {
       <header>
         <h1 className="text-2xl font-bold">새 일지 작성</h1>
         <p className="mt-1 text-sm text-gray-500">
-          6단계로 회차 일지를 작성합니다.
+          예정 행사를 골라 채우거나, 행사 없이 바로 작성합니다.
         </p>
       </header>
 
@@ -79,18 +95,22 @@ export default async function NewSessionPage() {
       )}
 
       {configured && !loadError && (
-        <SessionForm
-          nextNumber={nextNumber}
-          defaultChairperson={chairperson}
-          defaultTreasurer={treasurer}
-          carryOver={carryOver}
-          today={todayKST()}
-          members={members}
-          categories={categories}
-          defaultDueAmount={defaultDueAmount}
-          configured={configured}
-          sessions={sessions}
-          paidDuesMemberIds={paidDuesMemberIds}
+        <NewSessionFlow
+          plannedSessions={planned}
+          initialEventId={eventId ?? null}
+          formProps={{
+            nextNumber,
+            defaultChairperson: chairperson,
+            defaultTreasurer: treasurer,
+            carryOver,
+            today: todayKST(),
+            members,
+            categories,
+            defaultDueAmount,
+            configured,
+            sessions,
+            paidDuesMemberIds,
+          }}
         />
       )}
     </div>

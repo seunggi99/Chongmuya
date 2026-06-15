@@ -109,18 +109,23 @@ function initDraft(p: {
   defaultTreasurer: string;
   carryOver: number;
   today: string;
+  event: Session | null;
 }): SessionDraft {
+  const ev = p.event;
   return {
-    number: p.nextNumber,
-    type: "hike",
-    location: "",
-    date_start: p.today,
-    isMultiDay: false,
-    date_end: null,
-    fee_per_person: 0,
-    note: "",
-    chairperson: p.defaultChairperson,
-    treasurer: p.defaultTreasurer,
+    eventSessionId: ev?.id ?? null,
+    // 행사가 있으면 기본정보 자동 채움 (회차번호 없으면 다음 번호 제안)
+    number: ev?.number ?? p.nextNumber,
+    name: ev?.name ?? "",
+    type: ev?.type ?? "hike",
+    location: ev?.location ?? "",
+    date_start: ev?.date_start ?? p.today,
+    isMultiDay: Boolean(ev?.date_end),
+    date_end: ev?.date_end ?? null,
+    fee_per_person: ev?.fee_per_person ?? 0,
+    note: ev?.note ?? "",
+    chairperson: ev?.chairperson || p.defaultChairperson,
+    treasurer: ev?.treasurer || p.defaultTreasurer,
     carry_over: p.carryOver,
     is_manual_carry_over: false,
     attendee_ids: [],
@@ -141,6 +146,7 @@ export default function SessionForm({
   configured,
   sessions,
   paidDuesMemberIds,
+  event = null,
 }: {
   nextNumber: number;
   defaultChairperson: string;
@@ -153,10 +159,12 @@ export default function SessionForm({
   configured: boolean;
   sessions: Session[];
   paidDuesMemberIds: string[];
+  /** 채워 넣을 planned 행사 (없으면 새 일지) */
+  event?: Session | null;
 }) {
   const [draft, dispatch] = useReducer(
     draftReducer,
-    { nextNumber, defaultChairperson, defaultTreasurer, carryOver, today },
+    { nextNumber, defaultChairperson, defaultTreasurer, carryOver, today, event },
     initDraft,
   );
   const [step, setStep] = useState(1);

@@ -65,6 +65,18 @@ export default function Step1BasicInfo({ draft, dispatch }: StepProps) {
         </Field>
       </div>
 
+      {/* 행사명 */}
+      <Field label="행사명" hint="비우면 유형으로 표시">
+        <input
+          value={draft.name}
+          onChange={(e) =>
+            dispatch({ type: "patch", patch: { name: e.target.value } })
+          }
+          placeholder="예) 가을 정기산행"
+          className={INPUT_CLS}
+        />
+      </Field>
+
       {/* 장소 */}
       <Field label="장소" required>
         <input

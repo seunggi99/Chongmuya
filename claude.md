@@ -175,6 +175,13 @@ updated_at  timestamptz default now()
   이월금 연쇄재계산은 status='completed' 만 대상. 다음 회차번호도 number 있는 것만.
 - 달력(/events): planned=예정(회색)·completed=완료(파랑). EventCalendar 는 라이브러리
   없이 순수 날짜계산으로 month view 렌더.
+- **새 일지 흐름(/sessions/new):** ① planned 행사 선택 → 기본정보 자동채움 →
+  그 session 을 채워 completed 전환(새 행 생성 X, id 유지 → 교차 참조 안 깨짐),
+  또는 ② "행사 없이 바로 작성"(새 completed 생성). 달력 예정행사 클릭 시
+  `?event=<id>` 로 자동 선택. 회차번호 미정 행사는 작성 시 확정 입력.
+  저장은 SessionDraft.eventSessionId 유무로 update/insert 분기(lib/sessionsSave).
+- **교차 귀속회차 피커**(Step5)는 planned 행사도 포함(본인 제외). number 없는 행사는
+  "N차" 대신 행사명·일자로 표시(lib/sessionLabel). 미리보기/결산의 교차표기도 동일 폴백.
 
 ### session_attendees (참석자)
 ```sql

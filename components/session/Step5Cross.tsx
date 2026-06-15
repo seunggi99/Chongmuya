@@ -9,6 +9,7 @@ import {
   emptyEntry,
   entriesTotal,
 } from "@/lib/sessionDraft";
+import { sessionPickerLabel } from "@/lib/sessionLabel";
 import type {
   Category,
   EntryDraft,
@@ -40,6 +41,9 @@ export default function Step5Cross({
   const crossOf = (kind: EntryKind) =>
     draft.entries.filter((e) => e.isCross && e.kind === kind);
 
+  // 귀속회차 후보: 작성 중인 본인 행사는 제외 (planned/completed 모두 포함)
+  const pickerSessions = sessions.filter((s) => s.id !== draft.eventSessionId);
+
   return (
     <div className="space-y-6">
       <div>
@@ -58,7 +62,7 @@ export default function Step5Cross({
         title="교차 수입 (선입금)"
         kind="income"
         entries={crossOf("income")}
-        sessions={sessions}
+        sessions={pickerSessions}
         attendees={attendees}
         members={members}
         categories={categories}
@@ -75,7 +79,7 @@ export default function Step5Cross({
         title="교차 지출 (선지급)"
         kind="expense"
         entries={crossOf("expense")}
-        sessions={sessions}
+        sessions={pickerSessions}
         attendees={attendees}
         members={members}
         categories={categories}
@@ -164,7 +168,7 @@ function CrossSection({
                   <option value="">귀속회차 선택</option>
                   {sessions.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.number}차 · {s.location}
+                      {sessionPickerLabel(s)}
                     </option>
                   ))}
                 </select>

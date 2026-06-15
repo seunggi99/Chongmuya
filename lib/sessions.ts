@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
 import { computeBalance } from "@/lib/balance";
+import { sessionShortLabel } from "@/lib/sessionLabel";
 import type {
   Category,
   Entry,
@@ -189,15 +190,22 @@ export async function getSessionDetail(
         .filter((x): x is string => Boolean(x)),
     ),
   );
-  const crossNumber = new Map<string, number>();
+  // 교차 귀속회차 표시 라벨 (번호 없는 행사는 행사명·일자로)
+  const crossLabel = new Map<string, string>();
   if (crossIds.length > 0) {
     const { data, error } = await sb
       .from("sessions")
-      .select("id, number")
+      .select("id, number, name, type, date_start")
       .in("id", crossIds);
     if (error) throw error;
-    for (const r of (data ?? []) as { id: string; number: number }[]) {
-      crossNumber.set(r.id, r.number);
+    for (const r of (data ?? []) as {
+      id: string;
+      number: number | null;
+      name: string | null;
+      type: SessionType;
+      date_start: string;
+    }[]) {
+      crossLabel.set(r.id, sessionShortLabel(r));
     }
   }
 
@@ -209,8 +217,8 @@ export async function getSessionDetail(
       categoryName: cat?.name ?? "기타",
       special: cat?.special ?? null,
       amount: e.amount,
-      crossSessionNumber: e.cross_session_id
-        ? crossNumber.get(e.cross_session_id) ?? null
+      crossSessionLabel: e.cross_session_id
+        ? crossLabel.get(e.cross_session_id) ?? null
         : null,
       details: (detailsByEntry.get(e.id) ?? []).map((d) => ({
         label: d.label,
