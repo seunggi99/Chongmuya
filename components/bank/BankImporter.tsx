@@ -167,11 +167,13 @@ export default function BankImporter({
           <FileSpreadsheet className="h-4 w-4" />
           파일 선택
         </button>
-        <p className="mt-2 text-xs text-gray-400">.xlsx · .xls · .csv</p>
+        <p className="mt-2 text-xs text-gray-400">
+          .xlsx · .xls · .csv · .pdf (거래내역증명서)
+        </p>
         <input
           ref={inputRef}
           type="file"
-          accept=".xlsx,.xls,.csv"
+          accept=".xlsx,.xls,.csv,.pdf"
           className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])}
         />

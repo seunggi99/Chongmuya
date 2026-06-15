@@ -24,6 +24,11 @@
 .DS_Store
 *.pem
 
+# 샘플/실데이터 (은행 거래내역 등 민감 파일 커밋 방지)
+/docs/*.pdf
+/docs/*.xlsx
+/docs/*.csv
+
 # debug
 npm-debug.log*
 yarn-debug.log*

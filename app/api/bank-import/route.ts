@@ -3,16 +3,26 @@ import * as XLSX from "xlsx";
 import { isSupabaseConfigured } from "@/lib/env";
 import {
   detectBank,
+  detectBankByText,
   parseBank,
+  parseRows,
   parseWithMapping,
   getColumnCandidates,
   type Row,
   type ColumnMapping,
   type ParsedTransaction,
 } from "@/lib/bankParsers";
+import { extractRowsFromPdf } from "@/lib/pdfExtract";
 import { saveBankTransactions } from "@/lib/bankTransactions";
 
 export const runtime = "nodejs";
+
+function isPdfFile(file: File): boolean {
+  return (
+    file.type === "application/pdf" ||
+    file.name.toLowerCase().endsWith(".pdf")
+  );
+}
 
 /** 워크북 첫 시트를 2차원 배열로 (날짜·금액은 포맷 문자열로 유지) */
 function readRows(buffer: ArrayBuffer): Row[] {
@@ -38,10 +48,27 @@ export async function POST(req: Request) {
       );
     }
 
-    const rows = readRows(await file.arrayBuffer());
+    // PDF 는 좌표 기반으로 표를 재구성, 그 외(xlsx/csv)는 SheetJS
+    const isPdf = isPdfFile(file);
+    const buffer = await file.arrayBuffer();
+    let rows: Row[];
+    let pdfText = "";
+    if (isPdf) {
+      const extracted = await extractRowsFromPdf(buffer);
+      rows = extracted.rows;
+      pdfText = extracted.text;
+    } else {
+      rows = readRows(buffer);
+    }
+
     if (rows.length === 0) {
       return NextResponse.json(
-        { status: "error", error: "빈 파일이거나 읽을 수 없습니다." },
+        {
+          status: "error",
+          error: isPdf
+            ? "PDF 에서 거래 표를 추출하지 못했습니다. 컬럼 매핑이 필요한 양식일 수 있습니다."
+            : "빈 파일이거나 읽을 수 없습니다.",
+        },
         { status: 400 },
       );
     }
@@ -54,21 +81,21 @@ export async function POST(req: Request) {
       const mapping = JSON.parse(mappingRaw) as ColumnMapping;
       parsed = parseWithMapping(rows, mapping);
     } else {
-      // 자동 인식
-      const bank = detectBank(rows);
-      if (!bank) {
-        // 인식 실패 → 컬럼 매핑 후보 반환 (저장 안 함)
-        return NextResponse.json({
-          status: "need_mapping",
-          ...getColumnCandidates(rows),
-        });
-      }
-      parsed = parseBank(bank, rows);
+      // 자동 인식 — PDF 는 전체 텍스트의 은행명 토큰도 활용
+      const bank = detectBank(rows) ?? (isPdf ? detectBankByText(pdfText) : null);
+
+      // 헤더가 잡히면 은행 시그니처와 무관하게 파싱 시도
+      parsed = bank
+        ? parseBank(bank, rows)
+        : isPdf
+          ? parseRows(rows, "pdf")
+          : [];
+
       if (parsed.length === 0) {
-        // 인식은 됐지만 추출 0건 → 매핑으로 폴백
+        // 인식/추출 실패 → 컬럼 매핑 후보 반환 (저장 안 함)
         return NextResponse.json({
           status: "need_mapping",
-          detectedBank: bank,
+          ...(bank ? { detectedBank: bank } : {}),
           ...getColumnCandidates(rows),
         });
       }

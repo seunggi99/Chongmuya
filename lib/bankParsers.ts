@@ -381,12 +381,29 @@ export function detectBank(rows: Row[]): BankId | null {
   return null;
 }
 
-/** 인식된 은행으로 파싱 */
-export function parseBank(bank: BankId, rows: Row[]): ParsedTransaction[] {
+/**
+ * 헤더 자동 탐지 + 파싱 (bank 라벨은 저장용 표시값).
+ * PDF 재구성 표처럼 은행 시그니처가 안 맞아도 헤더만 잡히면 동작.
+ */
+export function parseRows(rows: Row[], bankLabel: string): ParsedTransaction[] {
   const headerIdx = findHeaderRow(rows);
   if (headerIdx === -1) return [];
   const spec = mapHeaderRow(rows[headerIdx]);
-  return buildTransactions(rows, headerIdx, spec, bank);
+  return buildTransactions(rows, headerIdx, spec, bankLabel);
+}
+
+/** 인식된 은행으로 파싱 */
+export function parseBank(bank: BankId, rows: Row[]): ParsedTransaction[] {
+  return parseRows(rows, bank);
+}
+
+/** 전체 텍스트(PDF 등)에서 은행명 토큰으로 은행 인식. 실패 시 null */
+export function detectBankByText(text: string): BankId | null {
+  const norm = text.replace(/\s+/g, "").toLowerCase();
+  for (const p of BANK_PROFILES) {
+    if (p.nameTokens.some((t) => norm.includes(t.toLowerCase()))) return p.id;
+  }
+  return null;
 }
 
 /** 사용자가 지정한 컬럼 매핑으로 파싱 */
