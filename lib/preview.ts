@@ -43,13 +43,20 @@ function parenText(e: PreviewEntryView): string {
 
 function entryRow(e: PreviewEntryView): string {
   const paren = parenText(e);
-  const cross = e.crossSessionLabel
-    ? `<span class="pv-cross">→${esc(e.crossSessionLabel)}</span>`
-    : "";
   const parenHtml = paren
     ? ` <span class="pv-paren">(${esc(paren)})</span>`
     : "";
-  return `<tr><td class="pv-cat">${wrap(`${esc(e.categoryName)}${cross}${parenHtml}`)}</td><td class="pv-amt">${wrap(formatWon(e.amount), "r")}</td></tr>`;
+
+  // 교차항목: [선납/선지급] · 원래 분류명 (→귀속회차). 분류명 자체는 그대로 유지.
+  let label: string;
+  if (e.crossSessionLabel) {
+    const kindLabel = e.kind === "income" ? "선납" : "선지급";
+    label = `<span class="pv-cross">${kindLabel} ·</span> ${esc(e.categoryName)} <span class="pv-cross">(→${esc(e.crossSessionLabel)})</span>`;
+  } else {
+    label = esc(e.categoryName);
+  }
+
+  return `<tr><td class="pv-cat">${wrap(`${label}${parenHtml}`)}</td><td class="pv-amt">${wrap(formatWon(e.amount), "r")}</td></tr>`;
 }
 
 function colTable(
@@ -249,7 +256,7 @@ export const PREVIEW_CSS = `
 #preview-target .pv-tbl td { padding:6px 10px; border:1px solid #e5e7eb; }
 #preview-target .pv-cat { word-break:break-word; }
 #preview-target .pv-paren { color:#6b7280; font-size:12px; }
-#preview-target .pv-cross { color:#D97706; font-size:11px; margin-left:4px; }
+#preview-target .pv-cross { color:#D97706; font-size:11px; font-weight:600; white-space:nowrap; }
 #preview-target .pv-amt { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
 #preview-target .pv-empty { color:#9ca3af; }
 #preview-target .pv-sum td { font-weight:700; background:#f9fafb; }
