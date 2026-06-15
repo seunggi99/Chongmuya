@@ -20,17 +20,17 @@ export async function GET(
       );
     }
 
-    const pdf = await renderSessionExport(data, "pdf");
+    const jpg = await renderSessionExport(data, "jpeg");
     const fileBase = `일지_${data.session.number}차_${compactDate(data.session.date_start)}`;
-    return new NextResponse(pdf, {
+    return new NextResponse(jpg, {
       headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="session.pdf"; filename*=UTF-8''${encodeURIComponent(`${fileBase}.pdf`)}`,
+        "Content-Type": "image/jpeg",
+        "Content-Disposition": `attachment; filename="session.jpg"; filename*=UTF-8''${encodeURIComponent(`${fileBase}.jpg`)}`,
       },
     });
   } catch (e) {
     const message =
-      e instanceof Error ? e.message : "PDF 생성 중 오류가 발생했습니다.";
+      e instanceof Error ? e.message : "JPG 생성 중 오류가 발생했습니다.";
     return NextResponse.json({ status: "error", error: message }, { status: 500 });
   }
 }

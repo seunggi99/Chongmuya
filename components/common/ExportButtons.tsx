@@ -16,8 +16,9 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 /**
- * 일지 내보내기 — PDF(서버 puppeteer) / JPG(클라이언트 html2canvas).
- * JPG 는 #preview-target 을 캡처한다.
+ * 일지 내보내기 — PDF / JPG 모두 서버(puppeteer)에서 렌더.
+ * 화면 캡처(html2canvas)는 한글 베이스라인이 어긋나므로 사용하지 않고,
+ * 정상 렌더되는 실제 크롬 엔진으로 PDF·JPG 를 동일하게 출력한다.
  */
 export default function ExportButtons({
   sessionId,
@@ -26,52 +27,29 @@ export default function ExportButtons({
   sessionId: string;
   fileBase: string; // "일지_752차_20260616"
 }) {
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [jpgLoading, setJpgLoading] = useState(false);
+  const [loading, setLoading] = useState<null | "pdf" | "jpg">(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function exportPdf() {
-    setPdfLoading(true);
+  async function exportFile(kind: "pdf" | "jpg") {
+    setLoading(kind);
     setError(null);
     try {
-      const res = await fetch(`/api/export/pdf/${sessionId}`);
+      const res = await fetch(`/api/export/${kind}/${sessionId}`);
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as {
           error?: string;
         } | null;
-        throw new Error(body?.error ?? "PDF 생성에 실패했습니다.");
+        throw new Error(body?.error ?? `${kind.toUpperCase()} 생성에 실패했습니다.`);
       }
-      downloadBlob(await res.blob(), `${fileBase}.pdf`);
+      downloadBlob(await res.blob(), `${fileBase}.${kind}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "PDF 생성 중 오류가 발생했습니다.");
-    } finally {
-      setPdfLoading(false);
-    }
-  }
-
-  async function exportJpg() {
-    setJpgLoading(true);
-    setError(null);
-    try {
-      const el = document.getElementById("preview-target");
-      if (!el) throw new Error("미리보기를 찾을 수 없습니다.");
-      // 폰트(Pretendard) 로딩 완료 후 캡처해야 글자 메트릭이 어긋나지 않음
-      if (document.fonts?.ready) await document.fonts.ready;
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.95),
+      setError(
+        e instanceof Error
+          ? e.message
+          : `${kind.toUpperCase()} 생성 중 오류가 발생했습니다.`,
       );
-      if (!blob) throw new Error("이미지 생성에 실패했습니다.");
-      downloadBlob(blob, `${fileBase}.jpg`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "JPG 생성 중 오류가 발생했습니다.");
     } finally {
-      setJpgLoading(false);
+      setLoading(null);
     }
   }
 
@@ -80,11 +58,11 @@ export default function ExportButtons({
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={exportPdf}
-          disabled={pdfLoading}
+          onClick={() => exportFile("pdf")}
+          disabled={loading !== null}
           className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
         >
-          {pdfLoading ? (
+          {loading === "pdf" ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <FileDown className="h-4 w-4" />
@@ -93,11 +71,11 @@ export default function ExportButtons({
         </button>
         <button
           type="button"
-          onClick={exportJpg}
-          disabled={jpgLoading}
+          onClick={() => exportFile("jpg")}
+          disabled={loading !== null}
           className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
         >
-          {jpgLoading ? (
+          {loading === "jpg" ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <ImageDown className="h-4 w-4" />
