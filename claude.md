@@ -166,9 +166,18 @@ is_manual_carry_over boolean default false
 created_at  timestamptz default now()
 updated_at  timestamptz default now()
 ```
-- **회차번호는 산행(hike)에만 부여.** 740→741→… 식으로 산행만 이어진다.
-  그 외 유형(정기총회·정기모임·시산제·여행·번개)은 number=null 로 저장하고
-  **"YYMM 유형"** 라벨로 구분한다(원본 시트명 방식). 예) 2025.6 정기총회 → "2506 정기총회".
+- **행사 유형은 커스텀 가능(session_types 테이블).** 분류(categories)처럼 설정에서
+  추가/삭제/이름·색상 변경. sessions.type 은 session_types.code 와 텍스트 매칭(FK 없음).
+  ```sql
+  session_types: id, code(unique), name, uses_number(bool), badge_color,
+                 is_system(삭제불가), is_active(소프트삭제), sort_order
+  ```
+  - 시드: 산행(uses_number=true,blue) · 정기총회(purple) · 정기모임(gray) ·
+    시산제(green) · 여행(amber) · 번개(red). 산행만 uses_number=true.
+- **회차번호는 uses_number=true 유형에만 부여.** (기본은 산행만) 740→741… 식으로
+  **같은 유형끼리** 이어진다(getNextSessionNumber=같은 유형 최대 number+1).
+  uses_number 유형이 여러 개여도 각각 따로 카운트. uses_number=false 유형은
+  number=null 로 저장하고 **"YYMM 유형"** 라벨로 구분(원본 시트명 방식). 예) "2506 정기총회".
   - 표시는 lib/sessionLabel: sessionTitle("제740차 산행" / "2506 정기총회"),
     sessionShortLabel("740차" / "2506 정기모임"), 교차표기·파일명도 동일 규칙.
   - 다음 회차번호 제안 = 산행 중 최대 number+1. 폼은 유형=산행일 때만 회차번호 입력칸 노출.

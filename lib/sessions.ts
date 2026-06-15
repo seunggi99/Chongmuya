@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
 import { computeBalance } from "@/lib/balance";
 import { sessionShortLabel } from "@/lib/sessionLabel";
+import { typeUsesNumber } from "@/lib/sessionTypes";
 import type {
   Category,
   Entry,
@@ -17,15 +18,19 @@ import type {
 } from "@/types";
 
 /**
- * 다음 회차번호 제안 = 산행(hike) 중 최대 number + 1.
- * 회차번호는 산행에만 부여하므로 type='hike' 만 대상. 산행이 없으면 1.
+ * 다음 회차번호 제안 = 같은 유형(typeCode) 중 최대 number + 1.
+ * uses_number=true 인 유형만 회차번호를 부여하므로, 그 유형이 아니면 1(미사용).
+ * uses_number 유형이 여러 개여도 각각 따로 카운트.
  */
-export async function getNextSessionNumber(): Promise<number> {
+export async function getNextSessionNumber(
+  typeCode = "hike",
+): Promise<number> {
   if (!isSupabaseConfigured()) return 1;
+  if (!(await typeUsesNumber(typeCode))) return 1;
   const { data, error } = await supabaseAdmin()
     .from("sessions")
     .select("number")
-    .eq("type", "hike")
+    .eq("type", typeCode)
     .not("number", "is", null)
     .order("number", { ascending: false })
     .limit(1)

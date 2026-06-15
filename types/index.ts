@@ -20,14 +20,27 @@ export type SessionType =
 /** 행사/일지 상태: planned=행사만 등록, completed=일지 작성 완료 */
 export type SessionStatus = "planned" | "completed";
 
+// 기본 유형 라벨 (DB session_types 미연결 시 폴백). 시드 이름과 일치.
 export const SESSION_TYPE_LABEL: Record<SessionType, string> = {
   hike: "산행",
-  general_meeting: "총회",
+  general_meeting: "정기총회",
   regular_meeting: "정기모임",
-  sansanje: "산신제",
+  sansanje: "시산제",
   travel: "여행",
   flash: "번개",
 };
+
+/** 행사 유형 (커스텀 가능, session_types 테이블) */
+export interface SessionTypeRow {
+  id: string;
+  code: string; // sessions.type 와 매칭
+  name: string;
+  uses_number: boolean; // 회차번호 부여 여부
+  badge_color: string; // 배지색 (BadgeColor 문자열)
+  is_system: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
 
 // ─── members ────────────────────────────────────────────────
 export interface Member {
