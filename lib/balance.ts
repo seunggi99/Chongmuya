@@ -50,6 +50,14 @@ export function computeBalance(
   };
 }
 
+/** 총잔액만 필요할 때 (= computeBalance(...).total) */
+export function calculateTotalBalance(
+  entries: BalanceEntry[],
+  carryOver: number,
+): number {
+  return computeBalance(entries, carryOver).total;
+}
+
 /**
  * entry_details 합계. entry 저장 시 amount 와 비교 검증에 사용.
  */

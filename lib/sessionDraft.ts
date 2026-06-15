@@ -8,6 +8,7 @@ import type {
   EntryDraft,
   EntryKind,
   GoodsDonationDraft,
+  SessionDraft,
 } from "@/types";
 
 /** 클라이언트 전용 식별자 생성 */
@@ -63,4 +64,64 @@ export function isMemberLinked(cat: Category | null | undefined): boolean {
       cat.special === "donation" ||
       cat.special === "annual_dues")
   );
+}
+
+/**
+ * 저장 전 draft 검증 — 문제점 메시지 목록을 반환(빈 배열이면 저장 가능).
+ * 클라이언트 게이팅용. 서버는 동일 규칙으로 재검증한다.
+ */
+export function collectDraftIssues(
+  draft: SessionDraft,
+  categories: Category[],
+): string[] {
+  const issues: string[] = [];
+  const catById = new Map(categories.map((c) => [c.id, c] as const));
+
+  if (!draft.location.trim()) issues.push("장소를 입력하세요.");
+  if (!draft.date_start) issues.push("시작일을 입력하세요.");
+  if (draft.isMultiDay && !draft.date_end) {
+    issues.push("다박 일정의 종료일을 입력하세요.");
+  }
+  if (!Number.isInteger(draft.number) || draft.number < 1) {
+    issues.push("회차번호가 올바르지 않습니다.");
+  }
+
+  draft.entries.forEach((entry, i) => {
+    const where = entry.isCross ? "교차" : entry.kind === "income" ? "수입" : "지출";
+    const tag = `${where} ${i + 1}번`;
+    const cat = entry.category_id ? catById.get(entry.category_id) : null;
+
+    if (!entry.category_id) {
+      issues.push(`${tag}: 분류를 선택하세요.`);
+      return;
+    }
+    if (entry.details.length === 0) {
+      issues.push(`${tag}: 상세 항목이 최소 1개 필요합니다.`);
+      return;
+    }
+    if (entry.details.some((d) => !Number.isFinite(d.amount) || d.amount < 0)) {
+      issues.push(`${tag}: 금액이 올바르지 않습니다.`);
+    }
+    if (entryTotal(entry) <= 0) {
+      issues.push(`${tag}: 합계가 0원입니다.`);
+    }
+    if (isMemberLinked(cat)) {
+      if (entry.member_ids.length === 0) {
+        issues.push(`${tag}(${cat?.name}): 회원을 선택하세요.`);
+      }
+      if (entry.member_ids.length !== entry.details.length) {
+        issues.push(`${tag}(${cat?.name}): 회원과 금액 항목 수가 맞지 않습니다.`);
+      }
+    }
+    if (entry.isCross && !entry.cross_session_id) {
+      issues.push(`${tag}: 귀속회차를 선택하세요.`);
+    }
+  });
+
+  // 물품찬조: 품목 비어있는 행
+  if (draft.goods_donations.some((g) => !g.item.trim())) {
+    issues.push("물품 찬조의 품목을 입력하거나 빈 행을 삭제하세요.");
+  }
+
+  return issues;
 }

@@ -1,10 +1,14 @@
 import SessionForm from "@/components/session/SessionForm";
 import SetupNotice from "@/components/common/SetupNotice";
 import { isSupabaseConfigured } from "@/lib/env";
-import { getNextSessionNumber, getCurrentBalance } from "@/lib/sessions";
+import {
+  getNextSessionNumber,
+  getCurrentBalance,
+  getSessionList,
+} from "@/lib/sessions";
 import { getMembers } from "@/lib/members";
 import { getClubSettings, getCategories } from "@/lib/categories";
-import type { Category, Member } from "@/types";
+import type { Category, Member, Session } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -23,18 +27,20 @@ export default async function NewSessionPage() {
   let carryOver = 0;
   let members: Member[] = [];
   let categories: Category[] = [];
+  let sessions: Session[] = [];
   let defaultDueAmount = 100_000;
   let loadError: string | null = null;
 
   if (configured) {
     try {
-      const [number, settings, balance, memberList, categoryList] =
+      const [number, settings, balance, memberList, categoryList, sessionList] =
         await Promise.all([
           getNextSessionNumber(),
           getClubSettings(),
           getCurrentBalance(),
           getMembers(),
           getCategories({ includeInactive: false }),
+          getSessionList(),
         ]);
       nextNumber = number;
       chairperson = settings.default_chairperson ?? "";
@@ -43,6 +49,7 @@ export default async function NewSessionPage() {
       carryOver = balance;
       members = memberList;
       categories = categoryList;
+      sessions = sessionList;
     } catch (e) {
       loadError =
         e instanceof Error
@@ -78,6 +85,7 @@ export default async function NewSessionPage() {
           categories={categories}
           defaultDueAmount={defaultDueAmount}
           configured={configured}
+          sessions={sessions}
         />
       )}
     </div>

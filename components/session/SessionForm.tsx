@@ -8,6 +8,7 @@ import type {
   EntryDraft,
   GoodsDonationDraft,
   Member,
+  Session,
   SessionDraft,
 } from "@/types";
 import Step1BasicInfo from "@/components/session/Step1BasicInfo";
@@ -85,6 +86,10 @@ export interface StepProps {
   setBankTxs: React.Dispatch<React.SetStateAction<BankTransaction[]>>;
   /** Supabase 연결 여부 (은행 가져오기 가용) */
   configured: boolean;
+  /** 기존 회차 목록 (교차 귀속회차 선택용) */
+  sessions: Session[];
+  /** 직전 회차 총잔액 = 자동 이월금 (수동 보정 되돌리기용) */
+  autoCarryOver: number;
 }
 
 const STEPS = [
@@ -132,6 +137,7 @@ export default function SessionForm({
   categories,
   defaultDueAmount,
   configured,
+  sessions,
 }: {
   nextNumber: number;
   defaultChairperson: string;
@@ -142,6 +148,7 @@ export default function SessionForm({
   categories: Category[];
   defaultDueAmount: number;
   configured: boolean;
+  sessions: Session[];
 }) {
   const [draft, dispatch] = useReducer(
     draftReducer,
@@ -175,6 +182,8 @@ export default function SessionForm({
     bankTxs,
     setBankTxs,
     configured,
+    sessions,
+    autoCarryOver: carryOver,
   };
 
   return (
@@ -220,15 +229,8 @@ export default function SessionForm({
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            disabled
-            title="저장 기능은 다음 단계에서 구현됩니다."
-            className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white opacity-40"
-          >
-            <Check className="h-4 w-4" />
-            저장 (예정)
-          </button>
+          // 마지막 단계의 저장 버튼은 Step6Confirm 내부에서 제공
+          <span className="text-xs text-gray-400">아래에서 저장하세요</span>
         )}
       </div>
     </div>

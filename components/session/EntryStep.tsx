@@ -44,7 +44,8 @@ export default function EntryStep({
     () => categories.filter((c) => c.kind === kind),
     [categories, kind],
   );
-  const entries = draft.entries.filter((e) => e.kind === kind);
+  // 당일(비교차) 항목만 — 교차(선입금/선지급)는 Step5에서 관리
+  const entries = draft.entries.filter((e) => e.kind === kind && !e.isCross);
   const txForKind = bankTxs.filter((t) =>
     kind === "income" ? t.amount >= 0 : t.amount < 0,
   );

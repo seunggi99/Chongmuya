@@ -20,6 +20,17 @@ export async function getNextSessionNumber(): Promise<number> {
   return data ? (data.number as number) + 1 : 1;
 }
 
+/** 전체 회차 목록 (number 내림차순) — 교차 귀속회차 선택 등에 사용 */
+export async function getSessionList(): Promise<Session[]> {
+  if (!isSupabaseConfigured()) return [];
+  const { data, error } = await supabaseAdmin()
+    .from("sessions")
+    .select("*")
+    .order("number", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Session[];
+}
+
 /** 최근 회차 N개 (number 내림차순) */
 export async function getRecentSessions(limit = 5): Promise<Session[]> {
   if (!isSupabaseConfigured()) return [];

@@ -207,6 +207,12 @@ export interface EntryDraft {
   uid: string; // 클라이언트 전용 식별자
   kind: EntryKind;
   category_id: string | null;
+  /**
+   * 교차 항목(선입금/선지급) 여부 — 클라이언트 전용.
+   * 귀속회차(cross_session_id) 미선택 상태에서도 Step3·4(당일)와
+   * Step5(교차)를 구분하기 위한 플래그. 저장 시 서버는 무시한다.
+   */
+  isCross?: boolean;
   /** 선입금/선지급 귀속회차 (당일이면 null) */
   cross_session_id: string | null;
   /** 은행 거래 매칭(있으면) */
