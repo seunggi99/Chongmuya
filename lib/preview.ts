@@ -165,8 +165,13 @@ export function renderPreviewBody(data: SessionDetailView): string {
 
     <table class="pv-sign">
       <tr>
-        <td>총무 <span class="pv-name">${esc(s.treasurer ?? "")}</span></td>
-        <td>회장 <span class="pv-name">${esc(s.chairperson ?? "")}</span></td>
+        <td class="pv-sign-label" rowspan="2">결제</td>
+        <td class="pv-sign-head">총무</td>
+        <td class="pv-sign-head">회장</td>
+      </tr>
+      <tr>
+        <td class="pv-sign-name">${esc(s.treasurer ?? "")}</td>
+        <td class="pv-sign-name">${esc(s.chairperson ?? "")}</td>
       </tr>
     </table>
 
@@ -201,8 +206,12 @@ export const PREVIEW_CSS = `
 #preview-target .pv-balance td:first-child { color:#374151; }
 #preview-target .pv-balance .pv-mid td { font-weight:600; background:#f9fafb; }
 #preview-target .pv-balance .pv-total td { font-weight:700; font-size:15px; color:#2563EB; background:#eff6ff; }
-#preview-target .pv-sign td { padding:14px 10px; border:1px solid #e5e7eb; text-align:center; color:#6b7280; }
-#preview-target .pv-sign .pv-name { color:#111827; font-weight:600; margin-left:8px; }
+/* 결제란: 원본 양식대로 우측 하단 작은 박스 (3열x2행, '결제' 세로병합) */
+#preview-target .pv-sign { width:34%; margin:6px 0 4px auto; border-collapse:collapse; }
+#preview-target .pv-sign td { border:1px solid #d1d5db; text-align:center; padding:5px 8px; font-size:12px; }
+#preview-target .pv-sign-label { background:#f9fafb; font-weight:600; color:#374151; width:26%; }
+#preview-target .pv-sign-head { background:#f9fafb; color:#6b7280; }
+#preview-target .pv-sign-name { color:#111827; font-weight:600; height:26px; }
 #preview-target .pv-receipts-h { font-weight:600; color:#374151; margin:8px 0; }
 #preview-target .pv-receipts-list { display:flex; flex-wrap:wrap; gap:10px; }
 #preview-target .pv-receipt { margin:0; width:120px; }
