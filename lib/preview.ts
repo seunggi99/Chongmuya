@@ -120,7 +120,7 @@ function topTable(data: SessionDetailView): string {
         ? `${formatKRW(fee)} × ${attendeeCount}명 = ${formatKRW(fullDaily)}`
         : `${formatKRW(fee)} × (${attendeeCount} - ${prepaidCount})명 = ${formatKRW(actualAmount)} <span class="pv-prepaid">(${esc(prepaid.join("·"))} 선납)</span>`;
     dailyFeeRow = `<tr>
-      <th class="pv-lbl">${wrap(`당일회비<br><span class="pv-sub">1인 ${formatWon(fee)}</span>`, "c")}</th>
+      <th class="pv-lbl" colspan="2">${wrap(`당일회비<br><span class="pv-sub">1인 ${formatWon(fee)}</span>`, "c")}</th>
       <td class="pv-amt">${wrap(formatWon(fullDaily), "r")}</td>
       <td colspan="2">${wrap(formula)}</td>
     </tr>`;
@@ -140,9 +140,12 @@ function topTable(data: SessionDetailView): string {
     .map((g) => `${g.donorName ? esc(g.donorName) + " — " : ""}${esc(g.item)}`)
     .join(" / ");
 
+  // 5열 구조(A:참석자라벨 · B:회원/일반회원 라벨 · C:값 시작 · D,E:일자/명단 확장)
+  // 장소·당일회비·찬조 라벨은 A+B(colspan2)로 좌측 라벨영역을 채우고,
+  // 명단은 장소 값과 같은 C 열에서 시작하도록 정렬한다.
   return `<table class="pv-top">
     <tr>
-      <th class="pv-lbl">${wrap("장소")}</th>
+      <th class="pv-lbl" colspan="2">${wrap("장소")}</th>
       <td>${wrap(esc(s.location))}</td>
       <th class="pv-lbl">${wrap("일자")}</th>
       <td class="pv-cnt">${wrap(esc(dateStr))}</td>
@@ -150,15 +153,15 @@ function topTable(data: SessionDetailView): string {
     <tr>
       <th class="pv-lbl pv-att" rowspan="2">${wrap(`참석자<br><span class="pv-sub">총 ${attendeeCount}명</span>`, "c")}</th>
       <th class="pv-lbl pv-sublbl">${wrap("회원", "c")}</th>
-      <td colspan="2">${wrap(attLine(members.map((m) => m.name)))}</td>
+      <td colspan="3">${wrap(attLine(members.map((m) => m.name)))}</td>
     </tr>
     <tr>
       <th class="pv-lbl pv-sublbl">${wrap("일반회원", "c")}</th>
-      <td colspan="2">${wrap(attLine(generals.map((m) => m.name)))}</td>
+      <td colspan="3">${wrap(attLine(generals.map((m) => m.name)))}</td>
     </tr>
     ${dailyFeeRow}
-    ${cashStr ? `<tr><th class="pv-lbl">${wrap("찬조")}</th><td colspan="3">${wrap(cashStr)}</td></tr>` : ""}
-    ${goodsStr ? `<tr><th class="pv-lbl">${wrap("물품 찬조")}</th><td colspan="3">${wrap(goodsStr)}</td></tr>` : ""}
+    ${cashStr ? `<tr><th class="pv-lbl" colspan="2">${wrap("찬조")}</th><td colspan="3">${wrap(cashStr)}</td></tr>` : ""}
+    ${goodsStr ? `<tr><th class="pv-lbl" colspan="2">${wrap("물품 찬조")}</th><td colspan="3">${wrap(goodsStr)}</td></tr>` : ""}
   </table>`;
 }
 
