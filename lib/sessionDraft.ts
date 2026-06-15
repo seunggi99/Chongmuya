@@ -43,7 +43,7 @@ export function emptyEntry(
 
 /** 빈 물품찬조 */
 export function emptyGoods(init?: Partial<GoodsDonationDraft>): GoodsDonationDraft {
-  return { uid: newId(), item: "", donor: null, ...init };
+  return { uid: newId(), item: "", donor: null, member_id: null, ...init };
 }
 
 /** entry 합계 = 상세항목 amount 합 */

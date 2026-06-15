@@ -108,7 +108,8 @@ export interface GoodsDonation {
   id: string;
   session_id: string;
   item: string; // '텀블러 20개'
-  donor: string | null; // '최봉식'
+  donor: string | null; // 비회원/외부인 찬조자 텍스트 (member_id 없을 때)
+  member_id: string | null; // 회원 찬조자 (있으면 우선)
 }
 
 // ─── annual_dues ────────────────────────────────────────────
@@ -229,7 +230,10 @@ export interface EntryDraft {
 export interface GoodsDonationDraft {
   uid: string; // 클라이언트 전용 식별자
   item: string;
+  /** 비회원/외부인 찬조자 텍스트 (member_id 없을 때) */
   donor: string | null;
+  /** 회원 찬조자 (있으면 우선) */
+  member_id: string | null;
 }
 
 /** 일지 작성 6단계 폼 전체 상태 */

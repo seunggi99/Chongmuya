@@ -167,7 +167,9 @@ export async function createSessionFromDraft(
         goods.map((g) => ({
           session_id: sessionId,
           item: g.item.trim(),
-          donor: g.donor?.trim() || null,
+          member_id: g.member_id ?? null,
+          // 회원 연결 시 텍스트 찬조자는 비움 (member_id 우선)
+          donor: g.member_id ? null : g.donor?.trim() || null,
         })),
       );
       if (error) throw error;

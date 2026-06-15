@@ -15,9 +15,8 @@ export default function Step3Income(props: StepProps) {
       <div className="border-t border-gray-100 pt-5">
         <GoodsDonation
           items={props.draft.goods_donations}
-          onChange={(goods) =>
-            props.dispatch({ type: "setGoods", goods })
-          }
+          members={props.members}
+          onChange={(goods) => props.dispatch({ type: "setGoods", goods })}
         />
       </div>
     </div>

@@ -208,8 +208,11 @@ member_id   uuid references members(id)
 id          uuid pk
 session_id  uuid references sessions(id) on delete cascade
 item        text not null               -- '텀블러 20개'
-donor       text                        -- '최봉식'
+donor       text                        -- 비회원/외부인 찬조자 (member_id 없을 때)
+member_id   uuid references members(id) on delete set null  -- 회원 찬조자(우선)
 ```
+- 찬조자는 회원 선택(member_id) 또는 직접 입력(donor) 둘 다 지원. member_id가
+  있으면 우선하고 donor는 비운다. 외부인 찬조면 donor 텍스트로 폴백.
 
 ### annual_dues (연회비 납부)
 ```sql
