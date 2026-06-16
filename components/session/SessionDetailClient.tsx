@@ -62,15 +62,15 @@ export default function SessionDetailClient({
                 value={formatDateRange(s.date_start, s.date_end)}
               />
               <Row
-                label="당일회비"
+                label={data.dailyFeeLabel}
                 value={
                   s.fee_per_person > 0
                     ? `1인 ${formatWon(s.fee_per_person)}`
                     : "—"
                 }
               />
-              <Row label="총무" value={s.treasurer || "—"} />
-              <Row label="회장" value={s.chairperson || "—"} />
+              <Row label={data.treasurerTitle} value={s.treasurer || "—"} />
+              <Row label={data.chairpersonTitle} value={s.chairperson || "—"} />
             </dl>
             <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
               <span className="text-sm text-gray-500">총 잔액</span>

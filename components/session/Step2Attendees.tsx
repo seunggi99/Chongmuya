@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { formatWon } from "@/lib/format";
+import { specialCategoryName } from "@/lib/categoryLabel";
 import type { MemberType } from "@/types";
 import type { StepProps } from "@/components/session/SessionForm";
 
@@ -11,7 +12,13 @@ const TABS: { type: MemberType; label: string }[] = [
   { type: "general", label: "일반회원" },
 ];
 
-export default function Step2Attendees({ draft, dispatch, members }: StepProps) {
+export default function Step2Attendees({
+  draft,
+  dispatch,
+  members,
+  categories,
+}: StepProps) {
+  const dailyFeeLabel = specialCategoryName(categories, "daily_fee", "당일회비");
   const [tab, setTab] = useState<MemberType>("member");
 
   const selected = useMemo(
@@ -119,7 +126,7 @@ export default function Step2Attendees({ draft, dispatch, members }: StepProps) 
           </span>
         </span>
         <span className="text-gray-600">
-          당일회비{" "}
+          {dailyFeeLabel}{" "}
           <span className="text-xs text-gray-400">
             ({formatWon(draft.fee_per_person)} × {totalCount})
           </span>{" "}

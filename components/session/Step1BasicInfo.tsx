@@ -1,6 +1,7 @@
 "use client";
 
 import { diffNights } from "@/lib/format";
+import { specialCategoryName } from "@/lib/categoryLabel";
 import type { StepProps } from "@/components/session/SessionForm";
 
 const INPUT_CLS =
@@ -13,7 +14,15 @@ function toDate(value: string): Date | null {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
-export default function Step1BasicInfo({ draft, dispatch, types }: StepProps) {
+export default function Step1BasicInfo({
+  draft,
+  dispatch,
+  types,
+  categories,
+  treasurerTitle,
+  chairpersonTitle,
+}: StepProps) {
+  const dailyFeeLabel = specialCategoryName(categories, "daily_fee", "당일회비");
   // 다박 기간 라벨 (N박 M일)
   const start = toDate(draft.date_start);
   const end = draft.date_end ? toDate(draft.date_end) : null;
@@ -148,7 +157,7 @@ export default function Step1BasicInfo({ draft, dispatch, types }: StepProps) {
       )}
 
       {/* 당일회비 단가 */}
-      <Field label="당일회비 단가" hint="1인당 금액 (원). 참석자 수와 곱해 자동 계산">
+      <Field label={`${dailyFeeLabel} 단가`} hint="1인당 금액 (원). 참석자 수와 곱해 자동 계산">
         <input
           type="number"
           min={0}
@@ -179,7 +188,7 @@ export default function Step1BasicInfo({ draft, dispatch, types }: StepProps) {
 
       {/* 총무·회장 */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="총무" hint="설정 기본값 자동 채움">
+        <Field label={treasurerTitle} hint="설정 기본값 자동 채움">
           <input
             value={draft.treasurer}
             onChange={(e) =>
@@ -188,7 +197,7 @@ export default function Step1BasicInfo({ draft, dispatch, types }: StepProps) {
             className={INPUT_CLS}
           />
         </Field>
-        <Field label="회장" hint="설정 기본값 자동 채움">
+        <Field label={chairpersonTitle} hint="설정 기본값 자동 채움">
           <input
             value={draft.chairperson}
             onChange={(e) =>

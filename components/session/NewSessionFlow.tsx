@@ -25,6 +25,8 @@ interface FormProps {
   sessions: Session[];
   paidDuesMemberIds: string[];
   types: SessionTypeRow[];
+  treasurerTitle: string;
+  chairpersonTitle: string;
 }
 
 type Selection =

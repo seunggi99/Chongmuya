@@ -196,6 +196,8 @@ export async function saveClubInfoAction(input: {
   club_name: string;
   default_chairperson: string | null;
   default_treasurer: string | null;
+  treasurer_title: string;
+  chairperson_title: string;
   dues_renewal_month: number;
   default_due_amount: number;
 }): Promise<ActionResult<ClubSettings>> {

@@ -119,7 +119,7 @@ function topTable(data: SessionDetailView): string {
         ? `${formatKRW(fee)} × ${attendeeCount}명 = ${formatKRW(fullDaily)}`
         : `${formatKRW(fee)} × (${attendeeCount} - ${prepaidCount})명 = ${formatKRW(actualAmount)} <span class="pv-prepaid">(${esc(prepaid.join("·"))} 선입금)</span>`;
     dailyFeeRow = `<tr>
-      <th class="pv-lbl" colspan="2">${wrap(`당일회비<br><span class="pv-sub">1인 ${formatWon(fee)}</span>`, "c")}</th>
+      <th class="pv-lbl" colspan="2">${wrap(`${esc(data.dailyFeeLabel)}<br><span class="pv-sub">1인 ${formatWon(fee)}</span>`, "c")}</th>
       <td class="pv-amt">${wrap(formatWon(fullDaily), "r")}</td>
       <th class="pv-lbl">${wrap("합계", "c")}</th>
       <td>${wrap(formula)}</td>
@@ -163,8 +163,8 @@ function topTable(data: SessionDetailView): string {
       <td colspan="3">${wrap(attLine(generals.map((m) => m.name)))}</td>
     </tr>
     ${dailyFeeRow}
-    ${cashStr ? `<tr><th class="pv-lbl" colspan="2">${wrap("찬조")}</th><td colspan="3">${wrap(cashStr)}</td></tr>` : ""}
-    ${goodsStr ? `<tr><th class="pv-lbl" colspan="2">${wrap("물품 찬조")}</th><td colspan="3">${wrap(goodsStr)}</td></tr>` : ""}
+    ${cashStr ? `<tr><th class="pv-lbl" colspan="2">${wrap(esc(data.donationLabel))}</th><td colspan="3">${wrap(cashStr)}</td></tr>` : ""}
+    ${goodsStr ? `<tr><th class="pv-lbl" colspan="2">${wrap(esc(`물품 ${data.donationLabel}`))}</th><td colspan="3">${wrap(goodsStr)}</td></tr>` : ""}
   </table>`;
 }
 
@@ -215,8 +215,8 @@ export function renderPreviewBody(data: SessionDetailView): string {
     <table class="pv-sign">
       <tr>
         <td class="pv-sign-label" rowspan="2">${wrap("결제", "c")}</td>
-        <td class="pv-sign-head">${wrap("총무", "c")}</td>
-        <td class="pv-sign-head">${wrap("회장", "c")}</td>
+        <td class="pv-sign-head">${wrap(esc(data.treasurerTitle), "c")}</td>
+        <td class="pv-sign-head">${wrap(esc(data.chairpersonTitle), "c")}</td>
       </tr>
       <tr>
         <td class="pv-sign-name">${wrap(esc(s.treasurer ?? ""), "c")}</td>

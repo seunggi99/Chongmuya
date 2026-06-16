@@ -95,6 +95,9 @@ export interface StepProps {
   paidDuesMemberIds: string[];
   /** 행사 유형 목록 (유형 select·uses_number·라벨) */
   types: SessionTypeRow[];
+  /** 결제란 직책명 (설정값) */
+  treasurerTitle: string;
+  chairpersonTitle: string;
 }
 
 const STEPS = [
@@ -150,6 +153,8 @@ export default function SessionForm({
   sessions,
   paidDuesMemberIds,
   types,
+  treasurerTitle,
+  chairpersonTitle,
   event = null,
 }: {
   nextNumber: number;
@@ -164,6 +169,8 @@ export default function SessionForm({
   sessions: Session[];
   paidDuesMemberIds: string[];
   types: SessionTypeRow[];
+  treasurerTitle: string;
+  chairpersonTitle: string;
   /** 채워 넣을 planned 행사 (없으면 새 일지) */
   event?: Session | null;
 }) {
@@ -203,6 +210,8 @@ export default function SessionForm({
     autoCarryOver: carryOver,
     paidDuesMemberIds,
     types,
+    treasurerTitle,
+    chairpersonTitle,
   };
 
   return (

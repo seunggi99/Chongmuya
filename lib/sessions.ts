@@ -9,6 +9,8 @@ import {
   typeName,
 } from "@/lib/sessionLabel";
 import { getSessionTypes, typeUsesNumber } from "@/lib/sessionTypes";
+import { getClubSettings } from "@/lib/categories";
+import { specialCategoryName } from "@/lib/categoryLabel";
 import type {
   Category,
   Entry,
@@ -128,7 +130,10 @@ export async function getSessionDetail(
   if (se) throw se;
   if (!sessionRow) return null;
   const session = sessionRow as Session;
-  const types = await getSessionTypes({ includeInactive: true });
+  const [types, settings] = await Promise.all([
+    getSessionTypes({ includeInactive: true }),
+    getClubSettings(),
+  ]);
 
   const [attRes, entryRes, goodsRes, memberRes, catRes] = await Promise.all([
     sb
@@ -321,6 +326,18 @@ export async function getSessionDetail(
     shortLabel: sessionShortLabel(session, types),
     fileBase: sessionFileBase(session, types),
     typeName: typeName(session.type, types),
+    dailyFeeLabel: specialCategoryName(
+      (catRes.data ?? []) as Pick<Category, "name" | "special">[],
+      "daily_fee",
+      "당일회비",
+    ),
+    donationLabel: specialCategoryName(
+      (catRes.data ?? []) as Pick<Category, "name" | "special">[],
+      "donation",
+      "찬조",
+    ),
+    treasurerTitle: settings.treasurer_title || "총무",
+    chairpersonTitle: settings.chairperson_title || "회장",
   };
 }
 

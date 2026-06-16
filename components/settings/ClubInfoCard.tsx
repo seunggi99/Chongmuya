@@ -16,6 +16,12 @@ export default function ClubInfoCard({
   const [clubName, setClubName] = useState(initial.club_name);
   const [chair, setChair] = useState(initial.default_chairperson ?? "");
   const [treasurer, setTreasurer] = useState(initial.default_treasurer ?? "");
+  const [treasurerTitle, setTreasurerTitle] = useState(
+    initial.treasurer_title || "총무",
+  );
+  const [chairTitle, setChairTitle] = useState(
+    initial.chairperson_title || "회장",
+  );
   const [renewalMonth, setRenewalMonth] = useState(initial.dues_renewal_month);
   const [dueAmount, setDueAmount] = useState(initial.default_due_amount);
   const [pending, startTransition] = useTransition();
@@ -30,6 +36,8 @@ export default function ClubInfoCard({
         club_name: clubName,
         default_chairperson: chair || null,
         default_treasurer: treasurer || null,
+        treasurer_title: treasurerTitle,
+        chairperson_title: chairTitle,
         dues_renewal_month: renewalMonth,
         default_due_amount: dueAmount,
       });
@@ -72,6 +80,22 @@ export default function ClubInfoCard({
             value={treasurer}
             onChange={(e) => setTreasurer(e.target.value)}
             placeholder="총무 이름"
+            className={INPUT_CLS}
+          />
+        </Field>
+        <Field label="총무 직책명" hint="결제란 표기 (예: 총무·회계)">
+          <input
+            value={treasurerTitle}
+            onChange={(e) => setTreasurerTitle(e.target.value)}
+            placeholder="총무"
+            className={INPUT_CLS}
+          />
+        </Field>
+        <Field label="회장 직책명" hint="결제란 표기 (예: 회장·대표)">
+          <input
+            value={chairTitle}
+            onChange={(e) => setChairTitle(e.target.value)}
+            placeholder="회장"
             className={INPUT_CLS}
           />
         </Field>
@@ -137,10 +161,12 @@ export default function ClubInfoCard({
 
 function Field({
   label,
+  hint,
   className,
   children,
 }: {
   label: string;
+  hint?: string;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -148,6 +174,11 @@ function Field({
     <label className={`block ${className ?? ""}`}>
       <span className="mb-1.5 block text-sm font-medium text-gray-700">
         {label}
+        {hint && (
+          <span className="ml-1.5 text-xs font-normal text-gray-400">
+            {hint}
+          </span>
+        )}
       </span>
       {children}
     </label>

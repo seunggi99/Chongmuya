@@ -19,6 +19,8 @@ export default function Step6Confirm({
   categories,
   autoCarryOver,
   types,
+  treasurerTitle,
+  chairpersonTitle,
 }: StepProps) {
   const router = useRouter();
   const [editingCarry, setEditingCarry] = useState(false);
@@ -152,7 +154,7 @@ export default function Step6Confirm({
       <section className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-gray-700">
-            총무
+            {treasurerTitle}
           </span>
           <input
             value={draft.treasurer}
@@ -164,7 +166,7 @@ export default function Step6Confirm({
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-gray-700">
-            회장
+            {chairpersonTitle}
           </span>
           <input
             value={draft.chairperson}

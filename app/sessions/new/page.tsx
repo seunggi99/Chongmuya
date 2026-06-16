@@ -32,6 +32,8 @@ export default async function NewSessionPage({
   let nextNumber = 1;
   let chairperson = "";
   let treasurer = "";
+  let treasurerTitle = "총무";
+  let chairpersonTitle = "회장";
   let carryOver = 0;
   let members: Member[] = [];
   let categories: Category[] = [];
@@ -67,6 +69,8 @@ export default async function NewSessionPage({
       nextNumber = number;
       chairperson = settings.default_chairperson ?? "";
       treasurer = settings.default_treasurer ?? "";
+      treasurerTitle = settings.treasurer_title || "총무";
+      chairpersonTitle = settings.chairperson_title || "회장";
       defaultDueAmount = settings.default_due_amount;
       carryOver = balance;
       members = duesRes.members;
@@ -116,6 +120,8 @@ export default async function NewSessionPage({
             sessions,
             paidDuesMemberIds,
             types,
+            treasurerTitle,
+            chairpersonTitle,
           }}
         />
       )}

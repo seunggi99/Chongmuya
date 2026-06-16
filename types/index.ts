@@ -157,6 +157,8 @@ export interface ClubSettings {
   club_name: string;
   default_chairperson: string | null;
   default_treasurer: string | null;
+  treasurer_title: string; // 결제란 직책명 (기본 '총무')
+  chairperson_title: string; // 결제란 직책명 (기본 '회장')
   dues_renewal_month: number; // 연회비 갱신 월 (1~12), year_label 계산 기준
   default_due_amount: number; // 연회비 기본 금액(원)
   updated_at: string;
@@ -319,6 +321,11 @@ export interface SessionDetailView {
   shortLabel: string; // 짧은 라벨 ("740차" / "2506 정기모임")
   fileBase: string; // 내보내기 파일명 베이스
   typeName: string; // 유형명
+  // 분류/직책 라벨 (커스텀 가능 — categories.name / club_settings)
+  dailyFeeLabel: string; // special=daily_fee 분류명 (기본 '당일회비')
+  donationLabel: string; // special=donation 분류명 (기본 '찬조')
+  treasurerTitle: string; // 결제란 직책 (기본 '총무')
+  chairpersonTitle: string; // 결제란 직책 (기본 '회장')
 }
 
 // ─── 일지 작성 폼 draft (클라이언트 상태) ────────────────────

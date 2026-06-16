@@ -188,6 +188,8 @@ export async function getClubSettings(): Promise<ClubSettings> {
     club_name: "우리 모임",
     default_chairperson: null,
     default_treasurer: null,
+    treasurer_title: "총무",
+    chairperson_title: "회장",
     dues_renewal_month: 3,
     default_due_amount: DEFAULT_DUE_AMOUNT,
     updated_at: "",
@@ -214,6 +216,8 @@ export async function updateClubSettings(input: {
   club_name: string;
   default_chairperson: string | null;
   default_treasurer: string | null;
+  treasurer_title: string;
+  chairperson_title: string;
   dues_renewal_month: number;
   default_due_amount: number;
 }): Promise<ClubSettings> {
@@ -234,6 +238,8 @@ export async function updateClubSettings(input: {
       club_name: name,
       default_chairperson: input.default_chairperson?.trim() || null,
       default_treasurer: input.default_treasurer?.trim() || null,
+      treasurer_title: input.treasurer_title.trim() || "총무",
+      chairperson_title: input.chairperson_title.trim() || "회장",
       dues_renewal_month: month,
       default_due_amount: amount,
     })
