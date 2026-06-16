@@ -1,7 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
-import { computeBalance } from "@/lib/balance";
+import { computeBalance, num } from "@/lib/balance";
 import {
   sessionShortLabel,
   sessionTitle,
@@ -230,13 +230,13 @@ export async function getSessionDetail(
       kind: e.kind,
       categoryName: cat?.name ?? "기타",
       special: cat?.special ?? null,
-      amount: e.amount,
+      amount: num(e.amount),
       crossSessionLabel: e.cross_session_id
         ? crossLabel.get(e.cross_session_id) ?? null
         : null,
       details: (detailsByEntry.get(e.id) ?? []).map((d) => ({
         label: d.label,
-        amount: d.amount,
+        amount: num(d.amount),
         receipt_url: d.receipt_url,
       })),
       memberNames: (memberIdsByEntry.get(e.id) ?? [])
@@ -465,7 +465,7 @@ export async function getMonthlyExpense(
   const rows = await getSessionsInMonth(year, month);
   let sum = 0;
   for (const { entries } of rows) {
-    for (const e of entries) if (e.kind === "expense") sum += e.amount;
+    for (const e of entries) if (e.kind === "expense") sum += num(e.amount);
   }
   return sum;
 }

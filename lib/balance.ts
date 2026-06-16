@@ -11,14 +11,28 @@
  *  ※ entry.amount 는 항상 entry_details 합과 일치해야 한다(저장 시 검증).
  *  ※ 물품찬조(goods_donations)는 금액 계산에 미포함.
  */
-import type { BalanceSummary, Entry, EntryDetail } from "@/types";
+import type { BalanceSummary, Entry } from "@/types";
 
-/** 잔액 계산 입력에 필요한 entry 최소 형태 */
-type BalanceEntry = Pick<Entry, "kind" | "amount" | "cross_session_id">;
+/**
+ * 금액 안전 변환. amount·carry_over 는 DB 가 bigint 라 문자열로 올 수 있어
+ * 산술 전에 항상 Number 로 강제한다. (0 + "5000" 문자열 연결 버그 방지)
+ * NaN/undefined/null → 0.
+ */
+export function num(v: number | string | null | undefined): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** 잔액 계산 입력에 필요한 entry 최소 형태 (amount 는 문자열로 올 수 있음) */
+type BalanceEntry = {
+  kind: Entry["kind"];
+  amount: number | string;
+  cross_session_id: string | null;
+};
 
 export function computeBalance(
   entries: BalanceEntry[],
-  carryOver: number,
+  carryOver: number | string,
 ): BalanceSummary {
   let dailyIncome = 0;
   let dailyExpense = 0;
@@ -26,18 +40,20 @@ export function computeBalance(
   let crossExpense = 0;
 
   for (const e of entries) {
+    const amount = num(e.amount);
     const isCross = e.cross_session_id != null;
     if (e.kind === "income") {
-      if (isCross) crossIncome += e.amount;
-      else dailyIncome += e.amount;
+      if (isCross) crossIncome += amount;
+      else dailyIncome += amount;
     } else {
-      if (isCross) crossExpense += e.amount;
-      else dailyExpense += e.amount;
+      if (isCross) crossExpense += amount;
+      else dailyExpense += amount;
     }
   }
 
+  const carry = num(carryOver);
   const dailyBalance = dailyIncome - dailyExpense;
-  const total = dailyBalance + crossIncome - crossExpense + carryOver;
+  const total = dailyBalance + crossIncome - crossExpense + carry;
 
   return {
     dailyIncome,
@@ -45,7 +61,7 @@ export function computeBalance(
     dailyBalance,
     crossIncome,
     crossExpense,
-    carryOver,
+    carryOver: carry,
     total,
   };
 }
@@ -53,7 +69,7 @@ export function computeBalance(
 /** 총잔액만 필요할 때 (= computeBalance(...).total) */
 export function calculateTotalBalance(
   entries: BalanceEntry[],
-  carryOver: number,
+  carryOver: number | string,
 ): number {
   return computeBalance(entries, carryOver).total;
 }
@@ -61,8 +77,10 @@ export function calculateTotalBalance(
 /**
  * entry_details 합계. entry 저장 시 amount 와 비교 검증에 사용.
  */
-export function sumDetails(details: Pick<EntryDetail, "amount">[]): number {
-  return details.reduce((acc, d) => acc + d.amount, 0);
+export function sumDetails(
+  details: { amount: number | string }[],
+): number {
+  return details.reduce((acc, d) => acc + num(d.amount), 0);
 }
 
 /**
@@ -70,18 +88,19 @@ export function sumDetails(details: Pick<EntryDetail, "amount">[]): number {
  * - detail 은 최소 1개 필수 (detail 0개는 합=0 으로 검증 실패).
  */
 export function validateEntryDetails(
-  amount: number,
-  details: Pick<EntryDetail, "amount">[],
+  amount: number | string,
+  details: { amount: number | string }[],
 ): { ok: boolean; sum: number; reason?: string } {
   if (details.length === 0) {
     return { ok: false, sum: 0, reason: "상세항목이 최소 1개 필요합니다." };
   }
+  const amt = num(amount);
   const sum = sumDetails(details);
-  if (sum !== amount) {
+  if (sum !== amt) {
     return {
       ok: false,
       sum,
-      reason: `상세항목 합계(${sum.toLocaleString("ko-KR")})가 분류 금액(${amount.toLocaleString("ko-KR")})과 일치하지 않습니다.`,
+      reason: `상세항목 합계(${sum.toLocaleString("ko-KR")})가 분류 금액(${amt.toLocaleString("ko-KR")})과 일치하지 않습니다.`,
     };
   }
   return { ok: true, sum };
@@ -91,15 +110,16 @@ export function validateEntryDetails(
  * 분할 입력 검증: 분할 항목 합계 === 원본 거래 금액.
  */
 export function validateSplit(
-  originalAmount: number,
-  parts: { amount: number }[],
+  originalAmount: number | string,
+  parts: { amount: number | string }[],
 ): { ok: boolean; sum: number; reason?: string } {
-  const sum = parts.reduce((acc, p) => acc + p.amount, 0);
-  if (sum !== originalAmount) {
+  const original = num(originalAmount);
+  const sum = parts.reduce((acc, p) => acc + num(p.amount), 0);
+  if (sum !== original) {
     return {
       ok: false,
       sum,
-      reason: `분할 합계(${sum.toLocaleString("ko-KR")})가 원본 금액(${originalAmount.toLocaleString("ko-KR")})과 일치하지 않습니다.`,
+      reason: `분할 합계(${sum.toLocaleString("ko-KR")})가 원본 금액(${original.toLocaleString("ko-KR")})과 일치하지 않습니다.`,
     };
   }
   return { ok: true, sum };
@@ -120,7 +140,7 @@ export function recalcCarryOverChain(
     id: string;
     number: number | null;
     date_start: string;
-    carry_over: number;
+    carry_over: number | string;
     is_manual_carry_over: boolean;
     entries: BalanceEntry[];
   }[],
@@ -134,7 +154,9 @@ export function recalcCarryOverChain(
   let prevTotal: number | null = null;
   for (const s of ordered) {
     const carryOver =
-      s.is_manual_carry_over || prevTotal === null ? s.carry_over : prevTotal;
+      s.is_manual_carry_over || prevTotal === null
+        ? num(s.carry_over)
+        : prevTotal;
     const { total } = computeBalance(s.entries, carryOver);
     result.set(s.id, { carryOver, total });
     prevTotal = total;
