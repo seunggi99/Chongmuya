@@ -1,7 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, FileSpreadsheet, Loader2, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  FileSpreadsheet,
+  Loader2,
+  AlertCircle,
+  Lock,
+  RotateCcw,
+} from "lucide-react";
 import SetupNotice from "@/components/common/SetupNotice";
 import type { BankTransaction } from "@/types";
 import type { ColumnCandidate, ColumnMapping } from "@/lib/bankParsers";
@@ -21,7 +28,7 @@ interface MappingHint {
 type ImportResponse =
   | { status: "saved"; bank: string | null; count: number; transactions: BankTransaction[] }
   | ({ status: "need_mapping" } & MappingHint)
-  | { status: "error"; error: string };
+  | { status: "error"; error: string; needPassword?: boolean };
 
 /** 라벨 키워드로 컬럼 자동 추측 */
 function guessCol(columns: ColumnCandidate[], keywords: string[]): number {
@@ -39,12 +46,16 @@ export default function BankImporter({
   configured?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const pwRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hint, setHint] = useState<MappingHint | null>(null);
   const [dragging, setDragging] = useState(false);
+  // 잠긴 파일용 비밀번호 — 파싱 요청에만 쓰고 저장하지 않음(컴포넌트 상태)
+  const [password, setPassword] = useState("");
+  const [needPassword, setNeedPassword] = useState(false);
 
   // 매핑 폼 상태
   const [dateCol, setDateCol] = useState(-1);
@@ -66,6 +77,7 @@ export default function BankImporter({
       const fd = new FormData();
       fd.append("file", theFile);
       if (mapping) fd.append("mapping", JSON.stringify(mapping));
+      if (password) fd.append("password", password);
 
       const res = await fetch("/api/bank-import", { method: "POST", body: fd });
       const data = (await res.json()) as ImportResponse;
@@ -73,6 +85,8 @@ export default function BankImporter({
       if (data.status === "saved") {
         setHint(null);
         setFile(null);
+        setNeedPassword(false);
+        setPassword(""); // 사용 후 폐기
         setSuccess(`${data.count}건의 거래를 가져왔습니다.`);
         onImported(data.transactions);
       } else if (data.status === "need_mapping") {
@@ -92,6 +106,11 @@ export default function BankImporter({
         }
       } else {
         setError(data.error);
+        if (data.needPassword) {
+          setNeedPassword(true);
+          // 비밀번호 입력으로 유도
+          setTimeout(() => pwRef.current?.focus(), 0);
+        }
       }
     } catch {
       setError("업로드 중 오류가 발생했습니다. 네트워크를 확인하세요.");
@@ -177,6 +196,52 @@ export default function BankImporter({
           className="hidden"
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
+      </div>
+
+      {/* 파일 비밀번호 (선택) — 잠긴 거래내역증명서용 */}
+      <div
+        className={[
+          "rounded-xl border p-4",
+          needPassword ? "border-amber-300 bg-amber-50/50" : "border-gray-100",
+        ].join(" ")}
+      >
+        <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+          <Lock className="h-3.5 w-3.5 text-gray-400" />
+          파일 비밀번호 <span className="text-gray-400">(선택)</span>
+        </label>
+        <p className="mt-0.5 text-xs text-gray-400">
+          은행 거래내역증명서가 비밀번호(보통 생년월일)로 잠겨 있으면 입력하세요.
+          가져오기에만 1회 쓰이며 저장되지 않습니다.
+        </p>
+        <div className="mt-2 flex gap-2">
+          <input
+            ref={pwRef}
+            type="password"
+            value={password}
+            autoComplete="off"
+            placeholder="잠긴 파일이 아니면 비워 두세요"
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && file && !loading) upload(file, null);
+            }}
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          {needPassword && file && (
+            <button
+              type="button"
+              onClick={() => upload(file, null)}
+              disabled={loading || !password}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4" />
+              )}
+              다시 시도
+            </button>
+          )}
+        </div>
       </div>
 
       {success && (

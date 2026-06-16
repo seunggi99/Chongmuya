@@ -100,8 +100,14 @@ export interface PdfExtractResult {
 
 export async function extractRowsFromPdf(
   buffer: ArrayBuffer,
+  password?: string,
 ): Promise<PdfExtractResult> {
-  const pdf = await getDocumentProxy(new Uint8Array(buffer));
+  // 잠긴 PDF 면 password 로 복호화. 비번 없음/틀림이면 pdf.js 가
+  // PasswordException(code 1=필요, 2=불일치) 을 던지며, 라우트에서 분류한다.
+  const pdf = await getDocumentProxy(
+    new Uint8Array(buffer),
+    password ? { password } : {},
+  );
   const rows: Row[] = [];
   const textParts: string[] = [];
   let header: { label: string; x: number }[] | null = null;

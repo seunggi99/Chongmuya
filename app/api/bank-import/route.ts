@@ -24,9 +24,16 @@ function isPdfFile(file: File): boolean {
   );
 }
 
-/** 워크북 첫 시트를 2차원 배열로 (날짜·금액은 포맷 문자열로 유지) */
-function readRows(buffer: ArrayBuffer): Row[] {
-  const wb = XLSX.read(new Uint8Array(buffer), { type: "array" });
+/**
+ * 워크북 첫 시트를 2차원 배열로 (날짜·금액은 포맷 문자열로 유지).
+ * password 가 있으면 잠긴 xlsx(ECMA-376/RC4) 를 복호화해 연다.
+ * 비번 필요/불일치 시 SheetJS 가 throw → 라우트에서 분류한다.
+ */
+function readRows(buffer: ArrayBuffer, password?: string): Row[] {
+  const wb = XLSX.read(new Uint8Array(buffer), {
+    type: "array",
+    ...(password ? { password } : {}),
+  });
   const ws = wb.Sheets[wb.SheetNames[0]];
   if (!ws) return [];
   return XLSX.utils.sheet_to_json(ws, {
@@ -35,6 +42,52 @@ function readRows(buffer: ArrayBuffer): Row[] {
     defval: "",
     blankrows: false,
   }) as Row[];
+}
+
+/**
+ * 파일 열기(복호화) 단계 에러를 사용자 메시지로 분류.
+ * needPassword=true 면 클라이언트에서 비밀번호 입력을 유도한다.
+ */
+function classifyOpenError(
+  err: unknown,
+  isPdf: boolean,
+  hasPassword: boolean,
+): { message: string; needPassword: boolean } {
+  const e = err as { name?: string; code?: number; message?: string };
+  const msg = e?.message ?? "";
+
+  // PDF: pdf.js PasswordException (code 1=필요, 2=불일치)
+  if (isPdf && e?.name === "PasswordException") {
+    if (e.code === 2)
+      return { message: "비밀번호가 올바르지 않습니다. 다시 확인해 주세요.", needPassword: true };
+    return {
+      message: "이 파일은 비밀번호로 보호되어 있습니다. 파일 비밀번호를 입력해 주세요.",
+      needPassword: true,
+    };
+  }
+
+  // XLSX(SheetJS): "File is password-protected" / "Password is incorrect" 등
+  const looksEncrypted = /password|encrypt/i.test(msg);
+  if (/incorrect/i.test(msg))
+    return { message: "비밀번호가 올바르지 않습니다. 다시 확인해 주세요.", needPassword: true };
+  if (looksEncrypted && !hasPassword)
+    return {
+      message: "이 파일은 비밀번호로 보호되어 있습니다. 파일 비밀번호를 입력해 주세요.",
+      needPassword: true,
+    };
+  // 비번을 줬는데 열기 실패 → 대개 비번 불일치(복호화 후 깨진 데이터)
+  if (hasPassword)
+    return {
+      message: "비밀번호가 올바르지 않거나 파일을 열 수 없습니다. 비밀번호를 확인해 주세요.",
+      needPassword: true,
+    };
+
+  return {
+    message: isPdf
+      ? "PDF 를 읽을 수 없습니다. 파일을 확인하세요."
+      : "파일을 읽을 수 없습니다. 형식을 확인하세요.",
+    needPassword: false,
+  };
 }
 
 export async function POST(req: Request) {
@@ -48,18 +101,37 @@ export async function POST(req: Request) {
       );
     }
 
+    // 잠긴 거래내역증명서용 비밀번호(선택). 파싱에만 1회 사용하고
+    // 응답·로그·DB 어디에도 남기지 않는다.
+    const pwRaw = form.get("password");
+    let password = typeof pwRaw === "string" ? pwRaw : "";
+
     // PDF 는 좌표 기반으로 표를 재구성, 그 외(xlsx/csv)는 SheetJS
     const isPdf = isPdfFile(file);
     const buffer = await file.arrayBuffer();
     let rows: Row[];
     let pdfText = "";
-    if (isPdf) {
-      const extracted = await extractRowsFromPdf(buffer);
-      rows = extracted.rows;
-      pdfText = extracted.text;
-    } else {
-      rows = readRows(buffer);
+    try {
+      if (isPdf) {
+        const extracted = await extractRowsFromPdf(buffer, password || undefined);
+        rows = extracted.rows;
+        pdfText = extracted.text;
+      } else {
+        rows = readRows(buffer, password || undefined);
+      }
+    } catch (openErr) {
+      const fail = classifyOpenError(openErr, isPdf, Boolean(password));
+      password = ""; // 사용 후 즉시 폐기
+      return NextResponse.json(
+        {
+          status: "error",
+          error: fail.message,
+          ...(fail.needPassword ? { needPassword: true } : {}),
+        },
+        { status: fail.needPassword ? 422 : 400 },
+      );
     }
+    password = ""; // 파싱 끝 — 비밀번호 변수 폐기
 
     if (rows.length === 0) {
       return NextResponse.json(
