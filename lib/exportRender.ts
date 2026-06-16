@@ -30,7 +30,7 @@ function fullHtml(bodyHtml: string): string {
 }
 
 /** 환경별 Chromium — 프로덕션은 @sparticuz/chromium, 로컬은 설치된 Chrome */
-async function launchBrowser() {
+export async function launchBrowser() {
   if (process.env.NODE_ENV === "production") {
     return puppeteer.launch({
       args: chromium.args,

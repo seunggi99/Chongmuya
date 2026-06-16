@@ -189,6 +189,47 @@ export interface DuesStatusRow {
   dueId: string | null; // 납부 취소(삭제)용
 }
 
+// ─── 연간 결산 (결산 뷰) ────────────────────────────────────
+export interface SettlementSummary {
+  totalIncome: number;
+  totalExpense: number;
+  totalBalance: number;
+  sessionCount: number;
+}
+export interface SettlementSessionRow {
+  id: string;
+  shortLabel: string;
+  location: string;
+  date_start: string;
+  date_end: string | null;
+  income: number;
+  expense: number;
+  balance: number;
+}
+export interface SettlementCategoryRow {
+  name: string;
+  amount: number;
+}
+export interface SettlementDonationRow {
+  name: string; // 찬조자(회원명)
+  amount: number;
+}
+export interface SettlementGoodsRow {
+  donorName: string | null;
+  item: string;
+}
+export interface SettlementData {
+  year: number;
+  availableYears: number[];
+  summary: SettlementSummary;
+  sessions: SettlementSessionRow[];
+  expenseByCategory: SettlementCategoryRow[];
+  duesYearLabel: string;
+  dues: DuesStatusRow[];
+  donations: SettlementDonationRow[];
+  goods: SettlementGoodsRow[];
+}
+
 export interface DuesRate {
   paidCount: number;
   totalCount: number;
