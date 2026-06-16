@@ -2,6 +2,7 @@
 
 import { diffNights } from "@/lib/format";
 import { specialCategoryName } from "@/lib/categoryLabel";
+import { getNextNumberAction } from "@/app/sessions/new/actions";
 import type { StepProps } from "@/components/session/SessionForm";
 
 const INPUT_CLS =
@@ -23,6 +24,21 @@ export default function Step1BasicInfo({
   chairpersonTitle,
 }: StepProps) {
   const dailyFeeLabel = specialCategoryName(categories, "daily_fee", "당일회비");
+
+  // 유형 변경 시 그 유형 기준으로 회차번호 재제안 (uses_number 유형만)
+  async function handleTypeChange(code: string) {
+    const usesNum = Boolean(types.find((t) => t.code === code)?.uses_number);
+    if (usesNum) {
+      try {
+        const n = await getNextNumberAction(code);
+        dispatch({ type: "patch", patch: { type: code, number: n } });
+        return;
+      } catch {
+        // 조회 실패 시 번호 유지
+      }
+    }
+    dispatch({ type: "patch", patch: { type: code } });
+  }
   // 다박 기간 라벨 (N박 M일)
   const start = toDate(draft.date_start);
   const end = draft.date_end ? toDate(draft.date_end) : null;
@@ -43,9 +59,7 @@ export default function Step1BasicInfo({
         <Field label="모임 유형">
           <select
             value={draft.type}
-            onChange={(e) =>
-              dispatch({ type: "patch", patch: { type: e.target.value } })
-            }
+            onChange={(e) => handleTypeChange(e.target.value)}
             className={INPUT_CLS}
           >
             {types.map((t) => (

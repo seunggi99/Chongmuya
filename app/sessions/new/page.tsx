@@ -79,6 +79,11 @@ export default async function NewSessionPage({
       sessions = sessionList;
       planned = plannedList;
       types = typeList;
+      // 기본 유형(첫 유형)이 hike 가 아니면 그 유형 기준으로 회차번호 재제안
+      const first = types[0];
+      if (first && first.uses_number && first.code !== "hike") {
+        nextNumber = await getNextSessionNumber(first.code);
+      }
     } catch (e) {
       loadError =
         e instanceof Error

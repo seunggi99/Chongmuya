@@ -116,6 +116,7 @@ function initDraft(p: {
   carryOver: number;
   today: string;
   event: Session | null;
+  firstTypeCode: string;
 }): SessionDraft {
   const ev = p.event;
   return {
@@ -123,7 +124,8 @@ function initDraft(p: {
     // 행사가 있으면 기본정보 자동 채움 (회차번호 없으면 다음 번호 제안)
     number: ev?.number ?? p.nextNumber,
     name: ev?.name ?? "",
-    type: ev?.type ?? "hike",
+    // 새 일지 기본 유형은 첫 유형(목록 순서). 행사 채우기면 그 유형
+    type: ev?.type ?? p.firstTypeCode,
     location: ev?.location ?? "",
     date_start: ev?.date_start ?? p.today,
     isMultiDay: Boolean(ev?.date_end),
@@ -176,7 +178,15 @@ export default function SessionForm({
 }) {
   const [draft, dispatch] = useReducer(
     draftReducer,
-    { nextNumber, defaultChairperson, defaultTreasurer, carryOver, today, event },
+    {
+      nextNumber,
+      defaultChairperson,
+      defaultTreasurer,
+      carryOver,
+      today,
+      event,
+      firstTypeCode: types[0]?.code ?? "hike",
+    },
     initDraft,
   );
   const [step, setStep] = useState(1);
