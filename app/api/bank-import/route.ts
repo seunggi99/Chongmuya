@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import officeCrypto from "officecrypto-tool";
 import { isSupabaseConfigured } from "@/lib/env";
 import {
   detectBank,
@@ -24,16 +25,40 @@ function isPdfFile(file: File): boolean {
   );
 }
 
+function isCsvFile(file: File): boolean {
+  return file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
+}
+
 /**
- * 워크북 첫 시트를 2차원 배열로 (날짜·금액은 포맷 문자열로 유지).
- * password 가 있으면 잠긴 xlsx(ECMA-376/RC4) 를 복호화해 연다.
- * 비번 필요/불일치 시 SheetJS 가 throw → 라우트에서 분류한다.
+ * 잠긴 엑셀(xls/xlsx)이면 복호화한 바이트를 돌려준다.
+ * SheetJS 내장 복호화는 일부 스킴만 지원하므로, officecrypto-tool 로
+ * ECMA-376 agile/standard 와 xls97(RC4 CryptoAPI) 를 모두 처리한다.
+ * - 잠긴 파일 + 비번 없음 → "File is password-protected" throw (라우트가 분류)
+ * - 비번 불일치 → officecrypto-tool 이 throw
  */
-function readRows(buffer: ArrayBuffer, password?: string): Row[] {
-  const wb = XLSX.read(new Uint8Array(buffer), {
-    type: "array",
-    ...(password ? { password } : {}),
-  });
+async function decryptIfNeeded(
+  buffer: ArrayBuffer,
+  isCsv: boolean,
+  password: string,
+): Promise<Uint8Array> {
+  const u8 = new Uint8Array(buffer);
+  if (isCsv) return u8; // CSV 는 암호화 대상 아님
+  const buf = Buffer.from(buffer);
+  let encrypted = false;
+  try {
+    encrypted = officeCrypto.isEncrypted(buf);
+  } catch {
+    encrypted = false; // CFB/zip 가 아니면 암호화 아님으로 간주
+  }
+  if (!encrypted) return u8;
+  if (!password) throw new Error("File is password-protected");
+  const decrypted = await officeCrypto.decrypt(buf, { password });
+  return new Uint8Array(decrypted);
+}
+
+/** 워크북 첫 시트를 2차원 배열로 (날짜·금액은 포맷 문자열로 유지) */
+function readRows(data: Uint8Array): Row[] {
+  const wb = XLSX.read(data, { type: "array" });
   const ws = wb.Sheets[wb.SheetNames[0]];
   if (!ws) return [];
   return XLSX.utils.sheet_to_json(ws, {
@@ -117,7 +142,9 @@ export async function POST(req: Request) {
         rows = extracted.rows;
         pdfText = extracted.text;
       } else {
-        rows = readRows(buffer, password || undefined);
+        // 잠긴 xls/xlsx 는 먼저 복호화한 뒤 SheetJS 로 파싱
+        const plain = await decryptIfNeeded(buffer, isCsvFile(file), password);
+        rows = readRows(plain);
       }
     } catch (openErr) {
       const fail = classifyOpenError(openErr, isPdf, Boolean(password));
