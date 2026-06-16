@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp,
@@ -160,7 +161,14 @@ export default function SettlementClient({ data }: { data: SettlementData }) {
             <tbody className="divide-y divide-gray-50">
               {data.sessions.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium">{s.shortLabel}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link
+                      href={`/settlement/session/${s.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {s.shortLabel}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-gray-600">{s.location}</td>
                   <td className="px-4 py-3 text-gray-500">
                     {formatDateRange(s.date_start, s.date_end)}

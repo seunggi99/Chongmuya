@@ -8,6 +8,9 @@
     },
     "app/api/export/settlement/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/export/settlement-session/[id]/route.ts": {
+      "maxDuration": 60
     }
   }
 }

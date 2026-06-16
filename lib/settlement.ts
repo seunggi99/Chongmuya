@@ -2,21 +2,25 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getSessionTypes } from "@/lib/sessionTypes";
-import { sessionShortLabel } from "@/lib/sessionLabel";
+import { sessionShortLabel, typeName } from "@/lib/sessionLabel";
 import { getDuesStatus } from "@/lib/dues";
 import type {
   Category,
   Session,
+  SessionSettlementRow,
+  SessionSettlementView,
   SettlementData,
   SettlementSessionRow,
 } from "@/types";
+
+type SupabaseAdmin = ReturnType<typeof supabaseAdmin>;
 
 interface EntryRow {
   id: string;
   session_id: string;
   kind: "income" | "expense";
   category_id: string | null;
-  amount: number;
+  amount: number | string; // bigint 가 문자열로 올 수 있어 Number 로 강제
   cross_session_id: string | null;
 }
 
@@ -27,6 +31,39 @@ interface AttributedEntry {
   category_id: string | null;
   amount: number;
   id: string;
+}
+
+/**
+ * 결산 귀속 항목 조회 (공용).
+ *  - 포함: 대상 회차의 비교차 항목(cross_session_id IS NULL)
+ *  - 포함: 다른 회차에서 대상 회차로 귀속된 교차(cross_session_id = 대상)
+ *  - 제외: 대상 회차에서 다른 회차로 나간 교차(그 귀속회차 결산에 잡힘)
+ */
+async function fetchAttributed(
+  sb: SupabaseAdmin,
+  sessionIds: string[],
+): Promise<AttributedEntry[]> {
+  if (sessionIds.length === 0) return [];
+  const cols = "id, session_id, kind, category_id, amount, cross_session_id";
+  const [ownRes, inRes] = await Promise.all([
+    sb.from("entries").select(cols).in("session_id", sessionIds).is("cross_session_id", null),
+    sb.from("entries").select(cols).in("cross_session_id", sessionIds),
+  ]);
+  if (ownRes.error) throw ownRes.error;
+  if (inRes.error) throw inRes.error;
+  const map = (e: EntryRow, to: string): AttributedEntry => ({
+    toSessionId: to,
+    kind: e.kind,
+    category_id: e.category_id,
+    amount: Number(e.amount) || 0,
+    id: e.id,
+  });
+  return [
+    ...((ownRes.data ?? []) as EntryRow[]).map((e) => map(e, e.session_id)),
+    ...((inRes.data ?? []) as EntryRow[]).map((e) =>
+      map(e, e.cross_session_id as string),
+    ),
+  ];
 }
 
 function pad2(n: number): string {
@@ -91,38 +128,7 @@ export async function getSettlement(
   const yearIds = yearSessions.map((s) => s.id);
 
   // 결산 항목 = 본인 비교차 + 다른 회차에서 귀속된 교차
-  let attributed: AttributedEntry[] = [];
-  if (yearIds.length > 0) {
-    const [ownRes, inRes] = await Promise.all([
-      sb
-        .from("entries")
-        .select("id, session_id, kind, category_id, amount, cross_session_id")
-        .in("session_id", yearIds)
-        .is("cross_session_id", null),
-      sb
-        .from("entries")
-        .select("id, session_id, kind, category_id, amount, cross_session_id")
-        .in("cross_session_id", yearIds),
-    ]);
-    if (ownRes.error) throw ownRes.error;
-    if (inRes.error) throw inRes.error;
-    attributed = [
-      ...((ownRes.data ?? []) as EntryRow[]).map((e) => ({
-        toSessionId: e.session_id,
-        kind: e.kind,
-        category_id: e.category_id,
-        amount: e.amount,
-        id: e.id,
-      })),
-      ...((inRes.data ?? []) as EntryRow[]).map((e) => ({
-        toSessionId: e.cross_session_id as string,
-        kind: e.kind,
-        category_id: e.category_id,
-        amount: e.amount,
-        id: e.id,
-      })),
-    ];
-  }
+  const attributed = await fetchAttributed(sb, yearIds);
 
   // 회차별 수입/지출
   const incomeBy = new Map<string, number>();
@@ -177,9 +183,15 @@ export async function getSettlement(
       .select("entry_id, label, amount")
       .in("entry_id", donationIds);
     if (e2) throw e2;
-    for (const d of (dets ?? []) as { label: string; amount: number }[]) {
+    for (const d of (dets ?? []) as {
+      label: string;
+      amount: number | string;
+    }[]) {
       const name = d.label.trim() || "(미상)";
-      donationByName.set(name, (donationByName.get(name) ?? 0) + d.amount);
+      donationByName.set(
+        name,
+        (donationByName.get(name) ?? 0) + (Number(d.amount) || 0),
+      );
     }
   }
   const donations = Array.from(donationByName.entries())
@@ -237,5 +249,74 @@ export async function getSettlement(
     dues,
     donations,
     goods,
+  };
+}
+
+/**
+ * 회차별 상세 결산 (정산서, 결산 뷰).
+ * 이 회차에 귀속된 수입·지출을 분류별로 집계한다. (일지=통장 뷰와 다를 수 있음)
+ *  - 포함: 본인 비교차 + 다른 회차에서 이 회차로 귀속된 선입금/선지급(원래 분류로)
+ *  - 제외: 이 회차에서 다른 회차로 나간 선입금/선지급(그 귀속회차 결산에 잡힘)
+ * 결과에는 "교차" 표시가 없다 — 순수 귀속 수입/지출만.
+ */
+export async function getSessionSettlement(
+  sessionId: string,
+): Promise<SessionSettlementView | null> {
+  if (!isSupabaseConfigured()) return null;
+  const sb = supabaseAdmin();
+
+  const { data: sRow, error } = await sb
+    .from("sessions")
+    .select("*")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!sRow) return null;
+  const session = sRow as Session;
+
+  const [types, catRes] = await Promise.all([
+    getSessionTypes({ includeInactive: true }),
+    sb.from("categories").select("id, name, special"),
+  ]);
+  if (catRes.error) throw catRes.error;
+  const catMap = new Map(
+    ((catRes.data ?? []) as Pick<Category, "id" | "name">[]).map(
+      (c) => [c.id, c.name] as const,
+    ),
+  );
+
+  const attributed = await fetchAttributed(sb, [sessionId]);
+
+  const incomeBy = new Map<string, number>();
+  const expenseBy = new Map<string, number>();
+  for (const a of attributed) {
+    const name = (a.category_id && catMap.get(a.category_id)) || "기타";
+    const m = a.kind === "income" ? incomeBy : expenseBy;
+    m.set(name, (m.get(name) ?? 0) + a.amount);
+  }
+  const toRows = (m: Map<string, number>): SessionSettlementRow[] =>
+    Array.from(m.entries())
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((x, y) => y.amount - x.amount);
+
+  const income = toRows(incomeBy);
+  const expense = toRows(expenseBy);
+  const totalIncome = income.reduce((a, r) => a + r.amount, 0);
+  const totalExpense = expense.reduce((a, r) => a + r.amount, 0);
+
+  return {
+    session: {
+      id: session.id,
+      shortLabel: sessionShortLabel(session, types),
+      typeName: typeName(session.type, types),
+      location: session.location,
+      date_start: session.date_start,
+      date_end: session.date_end,
+    },
+    income,
+    expense,
+    totalIncome,
+    totalExpense,
+    balance: totalIncome - totalExpense,
   };
 }

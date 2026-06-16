@@ -3,7 +3,7 @@
  * 차트는 자체 HTML 막대로 그린다(recharts 미사용 — 서버 자립 HTML).
  */
 import { formatWon, formatDateRange, formatDate } from "@/lib/format";
-import type { SettlementData } from "@/types";
+import type { SessionSettlementView, SettlementData } from "@/types";
 
 function esc(s: string): string {
   return s
@@ -147,5 +147,65 @@ export function renderSettlementHtml(data: SettlementData): string {
       ${goodsList}
     </div>
   </div>
+</div></body></html>`;
+}
+
+/** 회차별 정산서 PDF HTML (결산 뷰, 귀속 기준) */
+export function renderSessionSettlementHtml(data: SessionSettlementView): string {
+  const s = data.session;
+  const rowsHtml = (rows: { name: string; amount: number }[]) =>
+    rows.length > 0
+      ? rows
+          .map(
+            (r) =>
+              `<tr><td>${esc(r.name)}</td><td class="num">${formatWon(r.amount)}</td></tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="2" class="empty">내역 없음</td></tr>`;
+
+  return `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:#fff; }
+  body { font-family: Pretendard, system-ui, sans-serif; color:#111827; font-size:12px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .wrap { padding:24px; max-width:680px; margin:0 auto; }
+  h1 { text-align:center; font-size:20px; font-weight:700; margin:0 0 4px; }
+  .sub { text-align:center; color:#6b7280; margin:0 0 4px; }
+  .note { color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:6px 10px; font-size:11px; margin:12px 0; }
+  .two { display:flex; gap:12px; }
+  .two > div { flex:1; }
+  .h { font-weight:700; margin:0 0 6px; }
+  .income { color:#16A34A; } .expense { color:#DC2626; } .balance { color:#2563EB; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { border:1px solid #e5e7eb; padding:5px 8px; text-align:left; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  tfoot td { font-weight:700; background:#f9fafb; }
+  .empty { color:#9ca3af; text-align:center; }
+  .total { display:flex; justify-content:space-between; align-items:center; border:1px solid #e5e7eb; border-radius:8px; background:#eff6ff; padding:12px 16px; margin-top:14px; }
+  .total b { font-size:16px; }
+</style></head>
+<body><div class="wrap">
+  <h1>${esc(s.shortLabel)} 정산서</h1>
+  <p class="sub">${esc(s.typeName)} · ${esc(s.location)} · ${esc(formatDateRange(s.date_start, s.date_end))}</p>
+  <div class="note">결산 뷰: 이 회차에 귀속된 수입·지출만 (선입금/선지급은 귀속회차로 집계). 통장 잔액과 다를 수 있습니다.</div>
+
+  <div class="two">
+    <div>
+      <div class="h income">수입</div>
+      <table><tbody>${rowsHtml(data.income)}</tbody>
+        <tfoot><tr><td>합계</td><td class="num income">${formatWon(data.totalIncome)}</td></tr></tfoot>
+      </table>
+    </div>
+    <div>
+      <div class="h expense">지출</div>
+      <table><tbody>${rowsHtml(data.expense)}</tbody>
+        <tfoot><tr><td>합계</td><td class="num expense">${formatWon(data.totalExpense)}</td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="total"><span>결산 잔액 (수입 − 지출)</span><b class="balance">${formatWon(data.balance)}</b></div>
 </div></body></html>`;
 }

@@ -230,6 +230,27 @@ export interface SettlementData {
   goods: SettlementGoodsRow[];
 }
 
+// ─── 회차별 상세 결산 (정산서, 결산 뷰) ────────────────────
+export interface SessionSettlementRow {
+  name: string; // 분류명
+  amount: number;
+}
+export interface SessionSettlementView {
+  session: {
+    id: string;
+    shortLabel: string;
+    typeName: string;
+    location: string;
+    date_start: string;
+    date_end: string | null;
+  };
+  income: SessionSettlementRow[];
+  expense: SessionSettlementRow[];
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+}
+
 export interface DuesRate {
   paidCount: number;
   totalCount: number;
