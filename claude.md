@@ -429,6 +429,24 @@ SUPABASE_SERVICE_ROLE_KEY=
 - PDF는 puppeteer-core + @sparticuz/chromium (일반 puppeteer 용량초과)
 - vercel.json에서 PDF 라우트 maxDuration 상향
 
+## 멀티테넌시 대비 메모 (아직 미구현 — 다른 모임 제공 시 손볼 지점 지도)
+> 현재는 **단일 모임 전제**. 모임별 분리(SaaS)로 갈 때 손볼 지점만 기록(지금 수정 X).
+
+- **club_settings 싱글톤(id=1)** — `lib/categories.ts`(getClubSettings/updateClubSettings,
+  `.eq("id",1)`·`id:1` upsert), `lib/dues.ts`(`.eq("id",1)`). → 모임별 행/org_id PK 로 전환.
+- **org_id/club_id 컬럼 없음** — 전 테이블(sessions·members·categories·entries·
+  session_types·annual_dues·goods_donations·bank_transactions…)이 단일 모임 전제.
+  → org_id 컬럼 추가 + 모든 lib 쿼리에 `.eq("org_id", …)` 필터 + 인덱스.
+- **RLS 전면 허용** — 마이그레이션들의 `for all to authenticated using(true) with check(true)`.
+  → org 멤버십 기반 정책(`org_id = current_org()`)으로 교체. service_role 서버 경로도 org 스코프.
+- **회원 등급 2단계 고정** — `member`/`general` + 라벨 "회원/일반회원"
+  (MembersClient·AddMemberModal·Step2Attendees, MemberType). → 등급도 session_types 처럼
+  커스텀 테이블(member_tiers)로 빼면 모임별 등급제 지원.
+- **브랜드 "총무야"** — `app/layout.tsx`, `components/layout/Sidebar.tsx`(로고/푸터).
+  → 화이트라벨 시 모임별 로고·이름. (제품 브랜드라 보통은 그대로)
+- 참고: 직책명(총무/회장)·분류명(당일회비/찬조)·유형·연회비 갱신월·기본금액은
+  **이미 설정/DB 로 일반화 완료**(club_settings·categories·session_types). 추가 작업 불필요.
+
 ## 커밋 규칙
 - 작업을 검증 가능한 작은 단위로 끝낼 때마다 **묻지 말고 알아서 커밋**한다.
 - 형식: Conventional Commits `type(scope): subject` (한글 본문 가능).
