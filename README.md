@@ -11,15 +11,13 @@
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-D97757?style=flat-square&logo=anthropic&logoColor=white)
 
-<!-- TODO: 스크린샷 (이미지 추가 후 주석 해제)
 <table>
   <tr>
-    <td align="center"><b>일지 작성 (6단계)</b><br><img src="docs/screenshot-form.png" /></td>
-    <td align="center"><b>결산 + 차트</b><br><img src="docs/screenshot-settlement.png" /></td>
-    <td align="center"><b>PDF 출력</b><br><img src="docs/screenshot-pdf.png" /></td>
+    <td align="center"><b>일지 작성 (6단계)</b><br><img src="https://github.com/user-attachments/assets/a5247301-6175-4ab1-b700-4ddcd23bb5bf" width="320" /></td>
+    <td align="center"><b>결산 + 차트</b><br><img src="https://github.com/user-attachments/assets/224363e7-dcda-4a29-a532-85643badf79e" width="320" /></td>
+    <td align="center"><b>PDF 출력</b><br><img src="https://github.com/user-attachments/assets/1cc0f3bf-395c-4112-a3fe-15970547f1d7" width="320" /></td>
   </tr>
 </table>
--->
 
 ---
 
